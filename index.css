@@ -201,7 +201,7 @@ h1 {
 
     padding: 15px;
 
-    margin-top: 5px;
+    margin-top: 10px;
 
     font-size: 18px;
 
@@ -602,7 +602,8 @@ button {
     display: flex;
     justify-content: center;
     gap: 12px;
-
+    flex-wrap: wrap;
+    width: 100%;
     margin: 10px 0;
 
     color: white;
@@ -618,6 +619,11 @@ button {
     border: 1px solid rgba(255, 255, 255, 0.15);
 
     border-radius: 10px;
+        transition: 0.3s ease;
+}
+.game-stats span:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.14);
 }
 .score-section {
     margin: 10px 0;
@@ -656,4 +662,443 @@ button {
 
 #chances {
     font-weight: bold;
+}
+.game.win {
+    animation: winEffect 0.6s ease;
+}
+
+@keyframes winEffect {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.game.wrong {
+    animation: wrongShake 0.4s ease;
+}
+
+@keyframes wrongShake {
+    0% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-8px);
+    }
+
+    50% {
+        transform: translateX(8px);
+    }
+
+    75% {
+        transform: translateX(-8px);
+    }
+
+    100% {
+        transform: translateX(0);
+    }
+}
+.result-success {
+    animation: successText 0.5s ease;
+}
+
+@keyframes successText {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.15);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+.result-wrong {
+    animation: wrongText 0.4s ease;
+}
+
+@keyframes wrongText {
+    0% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-5px);
+    }
+
+    50% {
+        transform: translateX(5px);
+    }
+
+    75% {
+        transform: translateX(-5px);
+    }
+
+    100% {
+        transform: translateX(0);
+    }
+}
+.game > button[onclick="check()"] {
+    min-width: 120px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+@media (max-width: 600px) {
+    .game > button {
+        min-height: 48px;
+    }
+}
+#guessnumber:hover {
+    border-color: rgba(125, 211, 252, 0.5);
+}
+button:focus-visible,
+#guessnumber:focus-visible {
+    outline: 2px solid #7dd3fc;
+    outline-offset: 3px;
+}
+#hint {
+    padding: 10px 15px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    transition: 0.3s ease;
+}
+#chances {
+    font-weight: 700;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+#score {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+#result {
+    font-size: 20px;
+    font-weight: 700;
+    min-height: 28px;
+    transition: 0.3s ease;
+}
+#progress-bar {
+    transition: width 0.5s ease;
+}
+.game {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.game:hover {
+    transform: translateY(-3px);
+}
+#restart {
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+#restart + button {
+    font-weight: 600;
+    opacity: 0.9;
+    transition: 0.3s ease;
+}
+
+#restart + button:hover {
+    opacity: 1;
+}
+.game-stats span {
+    transition: 0.3s ease;
+}
+
+.game-stats span:hover {
+    transform: translateY(-3px) scale(1.02);
+}
+#streak,
+#bestStreak {
+    font-weight: 700;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+#attempts {
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+@media (max-width: 600px) {
+    .game {
+        width: 92%;
+        padding: 22px 18px;
+    }
+}
+#guessnumber:focus {
+    border-color: #7dd3fc;
+    box-shadow: 0 0 12px rgba(125, 211, 252, 0.25);
+}
+#levelMessage {
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    transition: 0.3s ease;
+}
+.game > button[onclick="check()"]:hover {
+    transform: translateY(-2px);
+}
+.game > button[onclick="check()"]:active {
+    transform: translateY(1px);
+}
+#guessnumber {
+    font-size: 18px;
+    font-weight: 600;
+}
+#guessnumber::placeholder {
+    opacity: 0.7;
+    font-weight: 500;
+}
+.game-stats {
+    row-gap: 8px;
+}
+#guessnumber:hover {
+    transform: translateY(-1px);
+}
+.game:hover {
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+.game button {
+    cursor: pointer;
+}
+@media (max-width: 400px) {
+    .game {
+        width: 94%;
+        padding: 20px 14px;
+    }
+
+    h1 {
+        font-size: 28px;
+    }
+
+    .game-stats {
+        gap: 6px;
+    }
+
+    .game-stats span {
+        padding: 6px 9px;
+        font-size: 13px;
+    }
+}
+.game button {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+#guessnumber::-webkit-inner-spin-button,
+#guessnumber::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+#guessnumber:active {
+    transform: scale(0.99);
+}
+#result {
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+}
+#result::first-line {
+    font-weight: 800;
+}
+.game-stats span {
+    min-width: 80px;
+    text-align: center;
+}
+#completed {
+    white-space: nowrap;
+}
+#result {
+    margin: 12px 0;
+}
+#hint {
+    margin: 10px 0;
+}
+#chances {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.score-section {
+    padding: 10px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+}
+#score {
+    text-shadow: 0 0 8px rgba(125, 211, 252, 0.35);
+}
+#progress-text {
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0.85;
+    margin: 6px 0 0;
+}
+#attempts {
+    margin: 8px 0;
+}
+#streak,
+#bestStreak {
+    margin: 8px 0;
+}
+* {
+    box-sizing: border-box;
+}
+.game {
+    max-width: 100%;
+}
+.game {
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+}
+.game {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+#guessnumber {
+    transition: transform 0.2s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+#restart + button {
+    margin-top: 8px;
+}
+#restart + button:hover {
+    transform: translateY(-2px);
+}
+.game button:active {
+    transform: scale(0.98);
+}
+#guessnumber {
+    cursor: text;
+}
+#guessnumber {
+    cursor: text;
+}
+
+html,
+body {
+    overflow: hidden;
+}
+.game {
+    padding: 15px 25px;
+}
+
+h1 {
+    margin-bottom: 12px;
+}
+
+button {
+    margin-top: 10px;
+}
+
+#result {
+    margin: 8px 0;
+}
+
+.game p {
+    margin: 5px 0;
+}
+h1 {
+    font-size: 30px;
+    margin-bottom: 8px;
+}
+
+.dice-icon {
+    width: 38px;
+    height: 38px;
+}
+.game-stats {
+    margin: 6px 0;
+}
+
+.score-section {
+    margin: 6px 0;
+}
+
+#streak,
+#bestStreak,
+#attempts,
+#hint,
+#chances {
+    margin: 4px 0;
+}
+#restart,
+#restart + button {
+    padding: 10px 20px;
+    margin-top: 6px;
+}
+#guessnumber {
+    padding: 10px;
+}
+
+.game > button[onclick="check()"] {
+    padding: 10px 22px;
+    margin-top: 8px;
+}
+.game {
+    padding: 8px 20px;
+}
+
+h1 {
+    margin-bottom: 6px;
+    font-size: 28px;
+}
+
+.game p {
+    margin: 3px 0;
+}
+
+#result {
+    margin: 5px 0;
+}
+.game-stats span {
+    padding: 5px 10px;
+}
+
+#score {
+    padding: 6px 16px;
+}
+
+.score-section {
+    padding: 6px;
+}
+.game {
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+
+h1 {
+    margin-bottom: 4px;
+    font-size: 26px;
+}
+
+.dice-icon {
+    width: 34px;
+    height: 34px;
+}
+
+.game-stats {
+    margin: 4px 0;
+}
+
+.game p {
+    margin: 2px 0;
+}
+.game {
+    zoom: 0.9;
+}
+.game {
+    padding-top: 20px;
+}
+body {
+    padding: 10px 0;
 }
