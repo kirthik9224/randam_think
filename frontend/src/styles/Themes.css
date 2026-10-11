@@ -1,0 +1,334 @@
+/* ==========================================================================
+   RANDOM THINKING GAME — THEMES & CLUTCH SENSORY STYLING
+   ========================================================================== */
+
+/* 1. Clutch Final Attempt Pulsing Red Vignette */
+.clutch-vignette-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 999;
+  box-shadow: inset 0 0 100px rgba(239, 68, 68, 0.45), inset 0 0 40px rgba(220, 38, 38, 0.6);
+  animation: clutch-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes clutch-pulse {
+  0% {
+    box-shadow: inset 0 0 60px rgba(239, 68, 68, 0.3), inset 0 0 25px rgba(220, 38, 38, 0.4);
+  }
+  50% {
+    box-shadow: inset 0 0 130px rgba(239, 68, 68, 0.65), inset 0 0 60px rgba(220, 38, 38, 0.85);
+  }
+  100% {
+    box-shadow: inset 0 0 60px rgba(239, 68, 68, 0.3), inset 0 0 25px rgba(220, 38, 38, 0.4);
+  }
+}
+
+.clutch-warning-banner {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.95), rgba(185, 28, 28, 0.95)) !important;
+  color: white;
+  border: 2px solid #f87171 !important;
+  animation: clutch-pulse-banner 1s ease-in-out infinite;
+}
+
+@keyframes clutch-pulse-banner {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.015); box-shadow: 0 0 25px rgba(239, 68, 68, 0.6); }
+}
+
+/* 2. Cyberpunk Neon Theme (Default & High-Depth) */
+.theme-cyberpunk {
+  --bs-body-bg: #080c15;
+  --bs-body-color: #f1f5f9;
+  --bs-primary: #06b6d4;
+  --bs-primary-rgb: 6, 182, 212;
+}
+
+.theme-cyberpunk body {
+  background-color: #080c15 !important;
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(6, 182, 212, 0.14) 0%, transparent 45%),
+    radial-gradient(circle at 85% 25%, rgba(168, 85, 247, 0.12) 0%, transparent 45%),
+    radial-gradient(circle at 50% 85%, rgba(236, 72, 153, 0.10) 0%, transparent 50%),
+    linear-gradient(rgba(6, 182, 212, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(6, 182, 212, 0.06) 1px, transparent 1px) !important;
+  background-size: auto, auto, auto, 36px 36px, 36px 36px !important;
+  background-attachment: fixed !important;
+}
+
+.theme-cyberpunk .card {
+  background-color: rgba(13, 20, 36, 0.88) !important;
+  backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(6, 182, 212, 0.28) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 15px rgba(6, 182, 212, 0.1) !important;
+}
+
+.theme-cyberpunk .navbar {
+  background: rgba(8, 12, 21, 0.88) !important;
+  backdrop-filter: blur(16px) !important;
+  border-bottom: 1px solid rgba(6, 182, 212, 0.25) !important;
+}
+
+.theme-cyberpunk .btn-primary {
+  background: linear-gradient(135deg, #06b6d4, #3b82f6) !important;
+  border: none !important;
+  box-shadow: 0 0 16px rgba(6, 182, 212, 0.5) !important;
+}
+
+/* 3. Casino Royale Gold Theme */
+.theme-casino_gold {
+  --bs-body-bg: #0b0d12;
+  --bs-body-color: #fef3c7;
+  --bs-primary: #f59e0b;
+  --bs-primary-rgb: 245, 158, 11;
+}
+
+.theme-casino_gold body {
+  background-color: #0b0d12 !important;
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.16) 0%, transparent 65%),
+    radial-gradient(circle at 10% 70%, rgba(217, 119, 6, 0.1) 0%, transparent 45%),
+    radial-gradient(circle at 90% 80%, rgba(234, 179, 8, 0.08) 0%, transparent 45%) !important;
+  background-attachment: fixed !important;
+}
+
+.theme-casino_gold .card {
+  background-color: rgba(19, 23, 31, 0.92) !important;
+  backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 16px rgba(245, 158, 11, 0.12) !important;
+}
+
+.theme-casino_gold .navbar {
+  background: rgba(11, 13, 18, 0.88) !important;
+  backdrop-filter: blur(16px) !important;
+  border-bottom: 1px solid rgba(245, 158, 11, 0.25) !important;
+}
+
+.theme-casino_gold .btn-primary {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+  color: #111827 !important;
+  font-weight: bold;
+  border: none !important;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.4) !important;
+}
+
+/* 4. Midnight Deep Space Theme */
+.theme-midnight_space {
+  --bs-body-bg: #060814;
+  --bs-body-color: #e0e7ff;
+  --bs-primary: #6366f1;
+  --bs-primary-rgb: 99, 102, 241;
+}
+
+.theme-midnight_space body {
+  background-color: #060814 !important;
+  background-image: 
+    radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.18) 0%, transparent 50%),
+    radial-gradient(circle at 80% 30%, rgba(139, 92, 246, 0.16) 0%, transparent 45%),
+    radial-gradient(circle at 50% 85%, rgba(59, 130, 246, 0.14) 0%, transparent 50%) !important;
+  background-attachment: fixed !important;
+}
+
+.theme-midnight_space .card {
+  background-color: rgba(12, 16, 33, 0.9) !important;
+  backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(99, 102, 241, 0.28) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 16px rgba(99, 102, 241, 0.14) !important;
+}
+
+.theme-midnight_space .navbar {
+  background: rgba(6, 8, 20, 0.88) !important;
+  backdrop-filter: blur(16px) !important;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.25) !important;
+}
+
+.theme-midnight_space .btn-primary {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+  border: none !important;
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.45) !important;
+}
+
+/* 5. Retro Arcade 8-Bit Theme */
+.theme-retro_8bit {
+  --bs-body-bg: #030c06;
+  --bs-body-color: #86efac;
+  --bs-primary: #10b981;
+  --bs-primary-rgb: 16, 185, 129;
+}
+
+.theme-retro_8bit body {
+  background-color: #030c06 !important;
+  background-image: 
+    radial-gradient(circle at 50% 20%, rgba(16, 185, 129, 0.14) 0%, transparent 60%),
+    linear-gradient(rgba(16, 185, 129, 0.06) 50%, rgba(0, 0, 0, 0.45) 50%) !important;
+  background-size: auto, 100% 4px !important;
+  background-attachment: fixed !important;
+}
+
+.theme-retro_8bit .card {
+  background-color: rgba(5, 23, 13, 0.94) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1.5px solid #10b981 !important;
+  box-shadow: 0 0 18px rgba(16, 185, 129, 0.22) !important;
+  border-radius: 8px !important;
+}
+
+.theme-retro_8bit .navbar {
+  background: rgba(3, 12, 6, 0.9) !important;
+  backdrop-filter: blur(16px) !important;
+  border-bottom: 1px solid rgba(16, 185, 129, 0.3) !important;
+}
+
+.theme-retro_8bit .btn-primary {
+  background: #10b981 !important;
+  color: #030c06 !important;
+  font-weight: 800;
+  border: 1px solid #86efac !important;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.5) !important;
+}
+
+/* 6. Modern Clean Theme */
+.theme-default body {
+  background-attachment: fixed !important;
+}
+.theme-default[data-bs-theme='dark'] body {
+  background-color: #090e1a !important;
+  background-image: 
+    radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 90% 90%, rgba(139, 92, 246, 0.08) 0%, transparent 50%) !important;
+}
+.theme-default[data-bs-theme='light'] body {
+  background-color: #f8fafc !important;
+  background-image: 
+    radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 90% 90%, rgba(139, 92, 246, 0.05) 0%, transparent 50%) !important;
+}
+
+/* 5. Level Up Celebratory Modal / Burst Banner */
+.level-up-toast {
+  position: fixed;
+  top: 80px;
+  right: 24px;
+  z-index: 1060;
+  min-width: 300px;
+  animation: slide-in-top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes slide-in-top {
+  0% { transform: translateY(-50px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+/* 6. Boss Raid Shield / HP Bar */
+.boss-raid-card {
+  background: linear-gradient(135deg, rgba(30, 27, 75, 0.95), rgba(76, 29, 149, 0.95));
+  border: 2px solid #8b5cf6;
+  box-shadow: 0 0 25px rgba(139, 92, 246, 0.25);
+}
+
+.boss-hp-bar {
+  height: 18px;
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+  position: relative;
+}
+
+.boss-hp-fill {
+  height: 100%;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(90deg, #ef4444, #f59e0b, #10b981);
+}
+
+/* ==========================================================================
+   HIGH-VISIBILITY NAVBAR NAVIGATION OPTIONS
+   ========================================================================== */
+.navbar .navbar-nav .nav-link {
+  color: #f1f5f9 !important;
+  font-weight: 600 !important;
+  font-size: 0.94rem;
+  padding: 0.45rem 0.95rem !important;
+  border-radius: 9999px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  opacity: 0.9;
+}
+
+.navbar .navbar-nav .nav-link i {
+  font-size: 1.05rem;
+  opacity: 0.95;
+}
+
+.navbar .navbar-nav .nav-link:hover {
+  color: #38bdf8 !important;
+  background-color: rgba(56, 189, 248, 0.15) !important;
+  transform: translateY(-1px);
+  opacity: 1;
+}
+
+.navbar .navbar-nav .nav-link.active {
+  color: #38bdf8 !important;
+  background-color: rgba(56, 189, 248, 0.22) !important;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.3) !important;
+  font-weight: 700 !important;
+  opacity: 1;
+}
+
+/* Theme-Specific Nav Highlights */
+.theme-cyberpunk .navbar .navbar-nav .nav-link {
+  color: #f1f5f9 !important;
+}
+.theme-cyberpunk .navbar .navbar-nav .nav-link:hover {
+  color: #06b6d4 !important;
+  background-color: rgba(6, 182, 212, 0.18) !important;
+}
+.theme-cyberpunk .navbar .navbar-nav .nav-link.active {
+  color: #06b6d4 !important;
+  background-color: rgba(6, 182, 212, 0.25) !important;
+  box-shadow: 0 0 14px rgba(6, 182, 212, 0.45) !important;
+}
+
+.theme-casino_gold .navbar .navbar-nav .nav-link {
+  color: #fef3c7 !important;
+}
+.theme-casino_gold .navbar .navbar-nav .nav-link:hover {
+  color: #f59e0b !important;
+  background-color: rgba(245, 158, 11, 0.18) !important;
+}
+.theme-casino_gold .navbar .navbar-nav .nav-link.active {
+  color: #f59e0b !important;
+  background-color: rgba(245, 158, 11, 0.25) !important;
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.45) !important;
+}
+
+.theme-midnight_space .navbar .navbar-nav .nav-link {
+  color: #e0e7ff !important;
+}
+.theme-midnight_space .navbar .navbar-nav .nav-link:hover {
+  color: #a5b4fc !important;
+  background-color: rgba(99, 102, 241, 0.18) !important;
+}
+.theme-midnight_space .navbar .navbar-nav .nav-link.active {
+  color: #a5b4fc !important;
+  background-color: rgba(99, 102, 241, 0.25) !important;
+  box-shadow: 0 0 14px rgba(99, 102, 241, 0.45) !important;
+}
+
+.theme-retro_8bit .navbar .navbar-nav .nav-link {
+  color: #86efac !important;
+}
+.theme-retro_8bit .navbar .navbar-nav .nav-link:hover {
+  color: #10b981 !important;
+  background-color: rgba(16, 185, 129, 0.2) !important;
+}
+.theme-retro_8bit .navbar .navbar-nav .nav-link.active {
+  color: #10b981 !important;
+  background-color: rgba(16, 185, 129, 0.28) !important;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.45) !important;
+}

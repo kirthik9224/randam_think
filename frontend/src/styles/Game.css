@@ -1,0 +1,371 @@
+.guess-input {
+  letter-spacing: 0.1em;
+}
+
+.guess-input:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.guessing-box {
+  min-height: 480px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.attempt-dot {
+  transition: background-color 0.3s ease;
+}
+
+.animate-bounce {
+  animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* --- Mode Specific Styling --- */
+
+/* Hot or Cold Heat Gauge */
+.heat-radar-bar {
+  height: 12px;
+  background: linear-gradient(to right, #0dcaf0 0%, #0d6efd 25%, #ffc107 50%, #fd7e14 75%, #dc3545 100%);
+  border-radius: 999px;
+  position: relative;
+}
+
+.heat-needle {
+  position: absolute;
+  top: -6px;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #dc3545;
+  box-shadow: 0 0 8px rgba(220, 53, 69, 0.6);
+  transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Blitz Countdown Clock */
+.blitz-timer-pill {
+  font-family: monospace;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  border: 2px solid #ffc107;
+  background: #212529;
+  color: #ffc107;
+}
+
+.blitz-timer-critical {
+  border-color: #dc3545 !important;
+  color: #ff4d4d !important;
+  animation: blitz-pulse 0.6s infinite alternate;
+}
+
+@keyframes blitz-pulse {
+  from {
+    transform: scale(1);
+    box-shadow: 0 0 4px rgba(220, 53, 69, 0.4);
+  }
+  to {
+    transform: scale(1.08);
+    box-shadow: 0 0 16px rgba(220, 53, 69, 0.8);
+  }
+}
+
+/* Detective Dossier */
+.detective-dossier-card {
+  border-left: 4px solid #0dcaf0 !important;
+  background: rgba(13, 202, 240, 0.05);
+}
+
+.detective-clue-item {
+  border-bottom: 1px dashed rgba(13, 202, 240, 0.25);
+  padding: 0.4rem 0;
+}
+
+.detective-clue-item:last-child {
+  border-bottom: none;
+}
+
+/* Sudden Death Warning Banner */
+.sudden-death-banner {
+  background: linear-gradient(135deg, #1a1a1a 0%, #343a40 100%);
+  border-left: 5px solid #dc3545;
+}
+
+/* --- Turn HUD & Multiplayer / AI Modes --- */
+.turn-hud-card {
+  border-left: 5px solid #0d6efd !important;
+}
+
+.selected-player-mode-glow {
+  box-shadow: 0 0 16px rgba(13, 110, 253, 0.35) !important;
+}
+
+.animate-pulse {
+  animation: pulse 1.2s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* ==========================================================================
+   Interactive Range Ruler Spectrum & Pins
+   ========================================================================== */
+.ruler-track {
+  cursor: pointer;
+  user-select: none;
+  transition: box-shadow 0.25s ease;
+}
+
+.ruler-track:hover {
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6), 0 0 12px rgba(13, 110, 253, 0.25) !important;
+}
+
+.ruler-active-gradient {
+  background: linear-gradient(90deg, #0284c7 0%, #3b82f6 50%, #10b981 100%);
+}
+
+.ruler-boiling-pulse {
+  animation: ruler-heat-wave 0.8s infinite alternate !important;
+}
+
+@keyframes ruler-heat-wave {
+  from {
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+  }
+  to {
+    box-shadow: 0 0 24px rgba(239, 68, 68, 0.95);
+  }
+}
+
+.ruler-tight-glow {
+  animation: ruler-tight-pulse 1.2s infinite alternate !important;
+}
+
+@keyframes ruler-tight-pulse {
+  from {
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+  }
+  to {
+    box-shadow: 0 0 18px rgba(245, 158, 11, 0.85);
+  }
+}
+
+.ruler-pin-drop {
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.ruler-pin-drop:hover {
+  transform: translate(-50%, -65%) scale(1.35) !important;
+  z-index: 25 !important;
+}
+
+.ruler-pin-ice {
+  background: #38bdf8;
+  color: #0f172a;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 8px #38bdf8, 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.ruler-pin-fire {
+  background: #f97316;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 8px #f97316, 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.ruler-pin-win {
+  background: #10b981;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 12px #10b981, 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.ruler-thumb-knob {
+  cursor: grab;
+  transition: transform 0.15s ease;
+}
+
+.ruler-thumb-knob:active {
+  cursor: grabbing;
+  transform: scale(1.25);
+}
+
+/* ==========================================================================
+   Thinker's Tactical Toolbox Power-Ups
+   ========================================================================== */
+.power-up-btn-active:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+}
+
+/* ==========================================================================
+   Emoting AI Bot Avatar Animations
+   ========================================================================== */
+.bot-chassis {
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.bot-shake {
+  animation: bot-head-shake 0.4s infinite alternate;
+}
+
+@keyframes bot-head-shake {
+  0% { transform: rotate(-4deg) translateY(0); }
+  50% { transform: rotate(4deg) translateY(-2px); }
+  100% { transform: rotate(-3deg) translateY(1px); }
+}
+
+.bot-sweat {
+  animation: bot-gentle-wobble 1.5s infinite ease-in-out;
+}
+
+@keyframes bot-gentle-wobble {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.bot-idle-eye {
+  animation: bot-eye-blink 4s infinite;
+}
+
+@keyframes bot-eye-blink {
+  0%, 96%, 100% { transform: scaleY(1); }
+  98% { transform: scaleY(0.1); }
+}
+
+/* ==========================================================================
+   Daily Mystery Challenge Card
+   ========================================================================== */
+.daily-challenge-card {
+  background: linear-gradient(135deg, #4338ca 0%, #6366f1 40%, #7c3aed 100%);
+}
+
+.daily-card-bg-gradient {
+  background: radial-gradient(circle at 85% 20%, rgba(255, 255, 255, 0.18), transparent 45%);
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   Thinking Matrix Virtual Numpad & Tactile Buttons
+   ========================================================================== */
+.numpad-key {
+  transition: transform 0.08s ease, background-color 0.12s ease, box-shadow 0.12s ease;
+  user-select: none;
+}
+
+.numpad-key:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1) !important;
+}
+
+.numpad-key:active {
+  transform: scale(0.93) !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* ==========================================================================
+   Floating Game Juice Text Popups & Screen Shake
+   ========================================================================== */
+@keyframes float-upward {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.85);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(0) scale(1.06);
+  }
+  80% {
+    opacity: 1;
+    transform: translateY(-28px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-56px) scale(0.95);
+  }
+}
+
+.animate-floating-text {
+  animation: float-upward 2.2s forwards cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes arena-rumble {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px) translateY(1px); }
+  40% { transform: translateX(4px) translateY(-1px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+.screen-shake {
+  animation: arena-rumble 0.35s ease;
+}
+
+/* ==========================================================================
+   Audio Sound Pill & Equalizer Waveform Bars
+   ========================================================================== */
+.eq-bar {
+  width: 2.5px;
+  background: currentColor;
+  border-radius: 1px;
+  animation: eq-bounce 0.8s infinite ease-in-out alternate;
+}
+
+.eq-bar-1 {
+  height: 5px;
+  animation-delay: 0.1s;
+}
+
+.eq-bar-2 {
+  height: 12px;
+  animation-delay: 0.35s;
+}
+
+.eq-bar-3 {
+  height: 8px;
+  animation-delay: 0.2s;
+}
+
+@keyframes eq-bounce {
+  from {
+    height: 3px;
+  }
+  to {
+    height: 12px;
+  }
+}
+
+/* ==========================================================================
+   Interactive Guess History Card Hover & Click
+   ========================================================================== */
+.guess-history-item {
+  transition: all 0.18s ease;
+  cursor: pointer;
+}
+
+.guess-history-item:hover {
+  transform: translateX(4px);
+  border-color: #0d6efd !important;
+  background-color: rgba(13, 110, 253, 0.06) !important;
+}
+
+

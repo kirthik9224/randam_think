@@ -1,0 +1,17 @@
+.hero-title {
+  letter-spacing: -0.03em;
+  font-weight: 900;
+}
+
+.hero-subtitle {
+  font-size: 1.2rem;
+  line-height: 1.6;
+}
+
+.difficulty-showcase {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.feature-icon {
+  font-weight: bold;
+}

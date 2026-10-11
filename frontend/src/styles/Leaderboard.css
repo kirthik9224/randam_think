@@ -1,0 +1,16 @@
+.podium-card {
+  transition: transform 0.3s ease;
+}
+
+.podium-card:hover {
+  transform: translateY(-5px);
+}
+
+.gold-podium {
+  transform: scale(1.05);
+  z-index: 2;
+}
+
+.gold-podium:hover {
+  transform: scale(1.08) translateY(-4px);
+}
