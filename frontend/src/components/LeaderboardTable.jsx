@@ -96,15 +96,9 @@ const LeaderboardTable = ({ entries = [], loading = false }) => {
                     <div>
                       <div className="fw-semibold text-body">{item.username}</div>
                       <div>
-                        {String(item.gameId).startsWith('off_') || item.isOffline ? (
-                          <span className="badge bg-secondary-subtle text-body-secondary border font-monospace" style={{ fontSize: '0.68rem' }}>
-                            <i className="bi bi-hdd me-1"></i> Local Session
-                          </span>
-                        ) : (
-                          <span className="badge bg-success-subtle text-success border border-success-subtle font-monospace" style={{ fontSize: '0.68rem' }}>
-                            <i className="bi bi-shield-check me-1"></i> Verified
-                          </span>
-                        )}
+                        <span className="badge bg-success-subtle text-success border border-success-subtle font-monospace" style={{ fontSize: '0.68rem' }}>
+                          <i className="bi bi-shield-check me-1"></i> Verified
+                        </span>
                       </div>
                     </div>
                   </div>

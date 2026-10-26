@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import authService from '../services/authService';
 import sounds from '../utils/soundEffects';
-import NetworkStatusPill from './NetworkStatusPill';
 import ThemeSelectorPill from './ThemeSelectorPill';
 import { getPlayerProgression } from '../utils/progressionHelper';
 
@@ -130,9 +129,6 @@ const Navbar = ({ darkMode, toggleDarkMode, soundEnabled, toggleSound }) => {
 
               {/* Board Theme & Pin Selector Pill */}
               <ThemeSelectorPill />
-
-              {/* Online / Offline Mode Indicator Pill */}
-              <NetworkStatusPill />
 
               {/* Sound Toggle */}
               <button

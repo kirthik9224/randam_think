@@ -186,11 +186,6 @@ const History = () => {
                 <tr key={g.gameId}>
                   <td className="font-monospace fw-bold">
                     #{g.gameId}
-                    {(g.offline || String(g.gameId).startsWith('off_')) && (
-                      <span className="badge bg-warning-subtle text-warning border border-warning-subtle ms-1 font-monospace" style={{ fontSize: '0.65rem' }}>
-                        OFFLINE
-                      </span>
-                    )}
                   </td>
                   <td>
                     {g.status === 'WON' ? (

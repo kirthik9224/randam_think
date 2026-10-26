@@ -177,34 +177,8 @@ const Login = () => {
               </div>
             </div>
 
-            {/* Offline Play Option */}
-            <div className="text-center my-3">
-              <div className="d-flex align-items-center justify-content-center gap-2 my-2 text-muted small">
-                <hr className="flex-grow-1 opacity-25" />
-                <span className="text-uppercase font-monospace text-secondary" style={{ fontSize: '0.72rem' }}>OR PLAY OFFLINE</span>
-                <hr className="flex-grow-1 opacity-25" />
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  sounds.playClick();
-                  authService.loginAsGuest('Guest Explorer');
-                  if (difficultyState) {
-                    navigate('/game', { state: { difficulty: difficultyState } });
-                  } else {
-                    navigate('/dashboard');
-                  }
-                }}
-                className="btn btn-outline-success w-100 py-2.5 rounded-pill fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2 hover-scale"
-                title="Play immediately without an account or server connection"
-              >
-                <i className="bi bi-play-circle-fill fs-5 text-success"></i>
-                <span>Play Offline as Guest (100% Local)</span>
-              </button>
-            </div>
-
             {/* Link to Registration */}
-            <div className="auth-footer">
+            <div className="auth-footer mt-4">
               <span>Don't have an account? </span>
               <Link to="/register" className="auth-link">
                 Sign Up

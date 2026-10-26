@@ -16,7 +16,6 @@ import PowerUpsBar from '../components/PowerUpsBar';
 import GameJuiceEffects from '../components/GameJuiceEffects';
 import InteractiveNumpad from '../components/InteractiveNumpad';
 import DeductionAnalyticsBar from '../components/DeductionAnalyticsBar';
-import NetworkStatusPill from '../components/NetworkStatusPill';
 import BossRaidHud from '../components/BossRaidHud';
 import ThemeSelectorPill from '../components/ThemeSelectorPill';
 import { getSelectedPin, applyThemeClass } from '../utils/themeHelper';

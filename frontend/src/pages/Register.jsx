@@ -119,7 +119,7 @@ const Register = () => {
               {/* Password Field */}
               <div className="auth-form-group">
                 <label className="auth-label" htmlFor="register-password">
-                  Password <span className="text-muted fw-normal">(min. 6 characters)</span>
+                  Password
                 </label>
                 <div className="auth-input-wrapper">
                   <span className="auth-input-icon">
@@ -129,7 +129,7 @@ const Register = () => {
                     id="register-password"
                     type={showPassword ? 'text' : 'password'}
                     className="auth-input form-control"
-                    placeholder="Create a strong password"
+                    placeholder="Create a strong password (min 6 chars)"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete="new-password"
@@ -160,7 +160,7 @@ const Register = () => {
                     id="register-confirm-password"
                     type={showConfirmPassword ? 'text' : 'password'}
                     className="auth-input form-control"
-                    placeholder="Repeat your password"
+                    placeholder="Re-enter your password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     autoComplete="new-password"
@@ -181,47 +181,25 @@ const Register = () => {
               {/* Submit Button */}
               <button
                 type="submit"
-                className="btn btn-primary auth-submit-btn w-100"
+                className="btn btn-primary auth-submit-btn w-100 mt-2"
                 disabled={loading}
               >
                 {loading ? (
                   <>
                     <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                    <span>Creating account...</span>
+                    <span>Creating your account...</span>
                   </>
                 ) : (
                   <>
-                    <span>Create Account</span>
+                    <span>Complete Registration</span>
                     <i className="bi bi-arrow-right"></i>
                   </>
                 )}
               </button>
             </form>
 
-            {/* Offline Play Option */}
-            <div className="text-center my-3">
-              <div className="d-flex align-items-center justify-content-center gap-2 my-2 text-muted small">
-                <hr className="flex-grow-1 opacity-25" />
-                <span className="text-uppercase font-monospace text-secondary" style={{ fontSize: '0.72rem' }}>OR PLAY OFFLINE</span>
-                <hr className="flex-grow-1 opacity-25" />
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  sounds.playClick();
-                  authService.loginAsGuest('Guest Explorer');
-                  navigate('/dashboard');
-                }}
-                className="btn btn-outline-success w-100 py-2.5 rounded-pill fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2 hover-scale"
-                title="Play immediately without an account or server connection"
-              >
-                <i className="bi bi-play-circle-fill fs-5 text-success"></i>
-                <span>Play Offline as Guest (100% Local)</span>
-              </button>
-            </div>
-
             {/* Link to Login */}
-            <div className="auth-footer">
+            <div className="auth-footer mt-4">
               <span>Already registered? </span>
               <Link to="/login" className="auth-link">
                 Sign In

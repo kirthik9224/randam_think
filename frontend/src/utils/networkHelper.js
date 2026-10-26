@@ -1,59 +1,25 @@
 /**
- * Network Connectivity & Online/Offline Mode Manager
- * Handles browser online/offline events and player manual mode preferences
+ * Network Connectivity Manager
+ * Game runs connected directly to backend API.
  */
 
-const MODE_STORAGE_KEY = 'rtg_network_mode'; // 'AUTO' | 'ONLINE' | 'OFFLINE'
-const listeners = new Set();
-
-export const getNetworkMode = () => {
-  try {
-    return localStorage.getItem(MODE_STORAGE_KEY) || 'AUTO';
-  } catch (e) {
-    return 'AUTO';
+try {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem('rtg_network_mode');
   }
-};
+} catch (e) {}
 
-export const isOnline = () => {
-  const mode = getNetworkMode();
-  if (mode === 'OFFLINE') return false;
-  if (mode === 'ONLINE') return true;
-  return typeof navigator !== 'undefined' ? navigator.onLine : true;
-};
+export const getNetworkMode = () => 'ONLINE';
 
-export const setNetworkMode = (mode) => {
-  try {
-    localStorage.setItem(MODE_STORAGE_KEY, mode);
-  } catch (e) {}
-  notifyListeners();
-};
+export const isOnline = () => true;
 
-export const toggleOnlineOffline = () => {
-  const current = isOnline();
-  setNetworkMode(current ? 'OFFLINE' : 'ONLINE');
-  return !current;
-};
+export const setNetworkMode = () => {};
+
+export const toggleOnlineOffline = () => true;
 
 export const onNetworkChange = (callback) => {
-  listeners.add(callback);
-  return () => listeners.delete(callback);
+  return () => {};
 };
-
-const notifyListeners = () => {
-  const online = isOnline();
-  listeners.forEach((fn) => {
-    try {
-      fn(online);
-    } catch (e) {
-      console.warn('Network listener error:', e);
-    }
-  });
-};
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('online', notifyListeners);
-  window.addEventListener('offline', notifyListeners);
-}
 
 export default {
   isOnline,
