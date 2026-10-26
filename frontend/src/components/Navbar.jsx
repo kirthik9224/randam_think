@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import authService from '../services/authService';
 import coinWalletService from '../services/coinWalletService';
 import sounds from '../utils/soundEffects';
+import backgroundMusic from '../utils/backgroundMusic';
 
 const Navbar = ({ darkMode, toggleDarkMode, soundEnabled, toggleSound }) => {
   const navigate = useNavigate();
@@ -14,6 +15,13 @@ const Navbar = ({ darkMode, toggleDarkMode, soundEnabled, toggleSound }) => {
   const [reducedMotion, setReducedMotion] = useState(() => {
     return localStorage.getItem('rtg_reduced_motion') === 'true';
   });
+  const [bgmEnabled, setBgmEnabled] = useState(() => backgroundMusic.enabled);
+
+  const handleToggleBgm = () => {
+    sounds.playClick();
+    const next = backgroundMusic.toggle();
+    setBgmEnabled(next);
+  };
 
   const [coins, setCoins] = useState(() => {
     try {
@@ -211,9 +219,19 @@ const Navbar = ({ darkMode, toggleDarkMode, soundEnabled, toggleSound }) => {
                 }}
                 className="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center p-0 flex-shrink-0"
                 style={{ width: '32px', height: '32px' }}
-                title={soundEnabled ? 'Mute Audio' : 'Unmute Audio'}
+                title={soundEnabled ? 'Mute Sound Effects' : 'Unmute Sound Effects'}
               >
                 <i className={`bi ${soundEnabled ? 'bi-volume-up-fill text-success' : 'bi-volume-mute-fill text-muted'}`}></i>
+              </button>
+
+              {/* Background Music Toggle */}
+              <button
+                onClick={handleToggleBgm}
+                className="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center p-0 flex-shrink-0"
+                style={{ width: '32px', height: '32px' }}
+                title={bgmEnabled ? 'Music: Playing (Click to Pause)' : 'Music: Off (Click to Play Synthwave Beats)'}
+              >
+                <i className={`bi ${bgmEnabled ? 'bi-music-note-beamed text-info animate-pulse' : 'bi-music-note text-muted'}`}></i>
               </button>
 
               {/* Dark/Light Mode Toggle */}

@@ -11,6 +11,7 @@ const MultiplayerLobby = ({
   loading,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const isHost = room.hostPlayerId === currentUserId;
   const currentPlayer = room.players.find((p) => p.playerId === currentUserId);
   const isReady = currentPlayer?.isReady || false;
@@ -20,6 +21,25 @@ const MultiplayerLobby = ({
     navigator.clipboard.writeText(room.roomCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShareInvite = async () => {
+    sounds.playClick();
+    const inviteUrl = `${window.location.origin}/multiplayer/room/${room.roomCode}`;
+    const shareData = {
+      title: 'Join my Random Thinking Match!',
+      text: `Let's play Guess the Number! Join my 10-round match with code ${room.roomCode}`,
+      url: inviteUrl,
+    };
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (e) {}
+    }
+    navigator.clipboard.writeText(inviteUrl);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2500);
   };
 
   const isTeamBattle = room.matchType === 'TEAM_BATTLE';
@@ -64,12 +84,23 @@ const MultiplayerLobby = ({
         <h2 className="fw-black text-white mb-2">{room.roomName || 'Multiplayer Lobby'}</h2>
         <p className="text-white-50 mb-3">Share this private room code with your friends to join:</p>
 
-        <div className="d-inline-flex flex-column align-items-center">
-          <div className="mp-code-pill d-flex align-items-center gap-3" onClick={handleCopyCode} title="Click to copy">
-            <span>{room.roomCode}</span>
-            <i className={`bi ${copied ? 'bi-check-circle-fill text-success' : 'bi-clipboard'} fs-5`}></i>
+        <div className="d-inline-flex flex-column align-items-center gap-2">
+          <div className="d-flex align-items-center gap-2 flex-wrap justify-content-center">
+            <div className="mp-code-pill d-flex align-items-center gap-3 cursor-pointer" onClick={handleCopyCode} title="Click to copy room code">
+              <span>{room.roomCode}</span>
+              <i className={`bi ${copied ? 'bi-check-circle-fill text-success' : 'bi-clipboard'} fs-5`}></i>
+            </div>
+            <button
+              onClick={handleShareInvite}
+              className="btn btn-outline-info rounded-pill px-3 py-2 small fw-bold d-inline-flex align-items-center gap-2 shadow-sm"
+              title="Share room link via WhatsApp, Telegram, or Copy"
+            >
+              <i className="bi bi-share-fill"></i>
+              <span>{copiedLink ? '✓ Link Copied!' : 'Share Room Link'}</span>
+            </button>
           </div>
-          {copied && <span className="text-success small mt-1 fw-bold">✓ Copied to clipboard!</span>}
+          {copied && <span className="text-success small fw-bold">✓ Room code copied to clipboard!</span>}
+          {copiedLink && <span className="text-info small fw-bold">✓ Direct invite link copied to clipboard!</span>}
         </div>
       </div>
 
