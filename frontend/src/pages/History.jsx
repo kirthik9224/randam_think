@@ -127,18 +127,43 @@ const History = () => {
 
       {filteredGames.length === 0 ? (
         <div className="card border-0 shadow-sm rounded-4 p-5 text-center bg-body">
-          <div className="display-4 mb-2">📜</div>
-          <h5>No games found matching your filters</h5>
-          <p className="text-muted mb-3">Play a game or clear your filters to view logs.</p>
-          <button
-            onClick={() => {
-              setFilterStatus('ALL');
-              setFilterDifficulty('ALL');
-            }}
-            className="btn btn-outline-secondary btn-sm rounded-pill px-3 mx-auto"
-          >
-            Clear Filters
-          </button>
+          <div className="display-4 mb-2">{games.length === 0 ? '🎲' : '🔍'}</div>
+          <h4 className="fw-bold mb-1">
+            {games.length === 0 ? 'No Games Played Yet!' : 'No games match your filters'}
+          </h4>
+          <p className="text-muted mb-4">
+            {games.length === 0
+              ? 'Start your first guessing match to record your scores and win stars!'
+              : 'Try clearing your filters to view all your previous game logs.'}
+          </p>
+          <div className="d-flex justify-content-center gap-2">
+            {games.length === 0 ? (
+              <>
+                <button
+                  onClick={() => navigate('/game', { state: { difficulty: 'MEDIUM' } })}
+                  className="btn btn-primary btn-lg rounded-pill px-5 fw-bold shadow-sm hover-scale"
+                >
+                  <i className="bi bi-play-circle-fill me-2"></i> Play Now
+                </button>
+                <button
+                  onClick={() => navigate('/')}
+                  className="btn btn-outline-secondary btn-lg rounded-pill px-4"
+                >
+                  Back to Home
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => {
+                  setFilterStatus('ALL');
+                  setFilterDifficulty('ALL');
+                }}
+                className="btn btn-outline-primary rounded-pill px-4 mx-auto"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
         </div>
       ) : (
         <div className="table-responsive rounded-4 shadow-sm border overflow-hidden">

@@ -53,6 +53,18 @@ public class Game {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
+    @Column(name = "slice50_used", nullable = false)
+    private boolean slice50Used = false;
+
+    @Column(name = "oracle_used", nullable = false)
+    private boolean oracleUsed = false;
+
+    @Column(name = "shield_used", nullable = false)
+    private boolean shieldUsed = false;
+
+    @Column(name = "emp_freeze_used", nullable = false)
+    private boolean empFreezeUsed = false;
+
     @OneToMany(mappedBy = "game", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Guess> guesses = new ArrayList<>();
 
@@ -200,5 +212,37 @@ public class Game {
 
     public void setGuesses(List<Guess> guesses) {
         this.guesses = guesses;
+    }
+
+    public boolean isSlice50Used() {
+        return slice50Used;
+    }
+
+    public void setSlice50Used(boolean slice50Used) {
+        this.slice50Used = slice50Used;
+    }
+
+    public boolean isOracleUsed() {
+        return oracleUsed;
+    }
+
+    public void setOracleUsed(boolean oracleUsed) {
+        this.oracleUsed = oracleUsed;
+    }
+
+    public boolean isShieldUsed() {
+        return shieldUsed;
+    }
+
+    public void setShieldUsed(boolean shieldUsed) {
+        this.shieldUsed = shieldUsed;
+    }
+
+    public boolean isEmpFreezeUsed() {
+        return empFreezeUsed;
+    }
+
+    public void setEmpFreezeUsed(boolean empFreezeUsed) {
+        this.empFreezeUsed = empFreezeUsed;
     }
 }

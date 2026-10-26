@@ -21,6 +21,8 @@ import BossRaidHud from '../components/BossRaidHud';
 import ThemeSelectorPill from '../components/ThemeSelectorPill';
 import { getSelectedPin, applyThemeClass } from '../utils/themeHelper';
 import { recordDailyChallengeResult } from '../utils/dailyChallengeHelper';
+import { getDifficultyConfig, formatRange } from '../utils/gameConfig';
+import { getLevelConfig, completeLevel } from '../utils/levelProgression';
 import '../styles/Game.css';
 import '../styles/Themes.css';
 
@@ -30,11 +32,19 @@ const Game = () => {
   const currentUser = authService.getCurrentUser();
   const inputRef = useRef(null);
 
-  const initialDifficulty = location.state?.difficulty || 'MEDIUM';
+  const [gameLevel, setGameLevel] = useState(() => location.state?.level || 1);
+  const currentLevelCfg = getLevelConfig(gameLevel);
+
+  const initialDifficulty = location.state?.difficulty || (gameLevel <= 2 ? 'EASY' : gameLevel <= 5 ? 'MEDIUM' : gameLevel <= 10 ? 'HARD' : 'EXPERT');
+  const diffConfig = getDifficultyConfig(initialDifficulty);
   const initialMode = location.state?.mode || 'CLASSIC';
-  const initialPlayerMode = location.state?.playerMode || '1_VS_CPU';
+  const initialPlayerMode = location.state?.playerMode || 'SOLO';
   const initialRoster = location.state?.roster || getDefaultRoster(initialPlayerMode, currentUser?.username);
   const isDailyChallenge = Boolean(location.state?.isDailyChallenge);
+
+  const [hintClue, setHintClue] = useState('');
+  const [hintUsed, setHintUsed] = useState(false);
+  const [showOptionalTools, setShowOptionalTools] = useState(false);
 
   const [game, setGame] = useState(null);
   const [currentMode, setCurrentMode] = useState(initialMode);
@@ -55,6 +65,10 @@ const Game = () => {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [timeAttackLeft, setTimeAttackLeft] = useState(45);
   const [finalResult, setFinalResult] = useState(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(() => {
+    return localStorage.getItem('rtg_reduced_motion') === 'true';
+  });
 
   // Sound, Combo & Game Juice Interactive Effects
   const [soundEnabled, setSoundEnabled] = useState(() => sounds.enabled);
@@ -99,9 +113,9 @@ const Game = () => {
     setRoster(getDefaultRoster(playerMode, currentUser?.username));
   };
 
-  // Range boundary tracking for helper guidance
-  const [currentMin, setCurrentMin] = useState(1);
-  const [currentMax, setCurrentMax] = useState(100);
+  // Range boundary tracking with guaranteed default fallbacks
+  const [currentMin, setCurrentMin] = useState(diffConfig.min);
+  const [currentMax, setCurrentMax] = useState(diffConfig.max);
 
   const activeContender = roster[currentTurnIndex] || roster[0] || { name: 'Player 1', team: 'Solo', isAi: false };
   const isCurrentAi = Boolean(activeContender?.isAi);
@@ -111,14 +125,15 @@ const Game = () => {
 
   useEffect(() => {
     applyThemeClass();
-    if (!currentUser) {
-      navigate('/login', { state: { from: location } });
-      return;
-    }
-    initNewGame(initialDifficulty, initialMode, initialPlayerMode, initialRoster);
+    const userToUse = currentUser || authService.getCurrentUser() || authService.loginAsGuest('Guest Player');
+    initNewGame(initialDifficulty, initialMode, initialPlayerMode, initialRoster, userToUse);
   }, []);
 
-  const attemptsLeft = game ? Math.max(0, game.attemptsAllowed - (game.attemptsUsed || 0)) : 7;
+  const activeLevelConfig = getLevelConfig(gameLevel);
+  const safeMin = game?.minNumber ?? activeLevelConfig?.min ?? 1;
+  const safeMax = game?.maxNumber ?? activeLevelConfig?.max ?? 100;
+  const safeAttemptsAllowed = game?.attemptsAllowed ?? activeLevelConfig?.attempts ?? 7;
+  const attemptsLeft = game ? Math.max(0, safeAttemptsAllowed - (game.attemptsUsed || 0)) : safeAttemptsAllowed;
   const isClutch = Boolean(!finalResult && game && attemptsLeft === 1);
 
   useEffect(() => {
@@ -140,7 +155,7 @@ const Game = () => {
   // Blitz Time Attack countdown timer
   useEffect(() => {
     let timerId = null;
-    if (currentMode === 'TIME_ATTACK' && isTimerRunning && !finalResult) {
+    if (currentMode === 'TIME_ATTACK' && isTimerRunning && !isPaused && !finalResult) {
       timerId = setInterval(() => {
         setTimeAttackLeft((prev) => {
           if (prev <= 1) {
@@ -168,11 +183,11 @@ const Game = () => {
     return () => {
       if (timerId) clearInterval(timerId);
     };
-  }, [currentMode, isTimerRunning, finalResult, game, initialDifficulty, playerMode]);
+  }, [currentMode, isTimerRunning, isPaused, finalResult, game, initialDifficulty, playerMode]);
 
   // Computer Turn Automated Guess Hook
   useEffect(() => {
-    if (!game || finalResult || loading || submitting || !isTimerRunning || aiThinking) {
+    if (!game || finalResult || loading || submitting || !isTimerRunning || isPaused || aiThinking) {
       return;
     }
 
@@ -187,9 +202,9 @@ const Game = () => {
 
       return () => clearTimeout(timer);
     }
-  }, [currentTurnIndex, game, finalResult, loading, submitting, isTimerRunning, currentMin, currentMax, roster, aiThinking, guesses]);
+  }, [currentTurnIndex, game, finalResult, loading, submitting, isTimerRunning, isPaused, currentMin, currentMax, roster, aiThinking, guesses]);
 
-  const initNewGame = async (difficulty, mode = currentMode, pMode = playerMode, pRoster = roster) => {
+  const initNewGame = async (difficulty, mode = currentMode, pMode = playerMode, pRoster = roster, activeUser = null, targetLevel = gameLevel) => {
     try {
       setLoading(true);
       setError('');
@@ -203,24 +218,40 @@ const Game = () => {
       setTimeAttackLeft(45);
       setCurrentTurnIndex(0);
       setAiThinking(false);
+      setIsPaused(false);
       setTriggerConfetti(false);
       setComboCount(1);
       setIsScreenShaking(false);
       setFloatingTexts([]);
-      setPowerUps({ slice50: true, oracle: true, shield: true, empFreeze: true });
-      setOracleClue(null);
-      setAiMood('idle');
-      setAiSpeech('');
+      setHintClue('');
+      setHintUsed(false);
 
-      const activeRoster = pRoster && pRoster.length > 0 ? pRoster : getDefaultRoster(pMode, currentUser?.username);
+      const lvlCfg = getLevelConfig(targetLevel);
+      const isCustom = Boolean(location.state?.isCustomRange);
+      const minBound = isCustom && location.state?.minNumber != null ? location.state.minNumber : (lvlCfg?.min ?? 1);
+      const maxBound = isCustom && location.state?.maxNumber != null ? location.state.maxNumber : (lvlCfg?.max ?? 100);
+      const attemptsCount = isCustom && location.state?.attemptsAllowed != null ? location.state.attemptsAllowed : (lvlCfg?.attempts ?? 7);
+
+      setCurrentMin(minBound);
+      setCurrentMax(maxBound);
+
+      const userToUse = activeUser || currentUser || authService.getCurrentUser() || authService.loginAsGuest('Guest Player');
+      const activeRoster = pRoster && pRoster.length > 0 ? pRoster : getDefaultRoster(pMode, userToUse?.username);
       setRoster(activeRoster);
       setPlayerMode(pMode);
 
-      const newGame = await gameService.startGame(currentUser.id, difficulty, mode, pMode);
+      const customOptions = {
+        level: targetLevel,
+        minNumber: minBound,
+        maxNumber: maxBound,
+        attemptsAllowed: attemptsCount,
+      };
+
+      const newGame = await gameService.startGame(userToUse.id, difficulty, mode, pMode, customOptions);
       setGame(newGame);
       setCurrentMode(newGame.gameMode || mode);
-      setCurrentMin(newGame.minNumber);
-      setCurrentMax(newGame.maxNumber);
+      setCurrentMin(newGame?.minNumber ?? minBound);
+      setCurrentMax(newGame?.maxNumber ?? maxBound);
       setIsTimerRunning(true);
     } catch (err) {
       setError(err.message || 'Failed to initialize game. Please try again.');
@@ -229,10 +260,53 @@ const Game = () => {
     }
   };
 
+  const handleStartNextLevel = (nextLevelNumber) => {
+    sounds.playClick();
+    setGameLevel(nextLevelNumber);
+    const nextCfg = getLevelConfig(nextLevelNumber);
+    initNewGame(
+      nextLevelNumber <= 2 ? 'EASY' : nextLevelNumber <= 5 ? 'MEDIUM' : nextLevelNumber <= 10 ? 'HARD' : 'EXPERT',
+      'CLASSIC',
+      'SOLO',
+      roster,
+      currentUser,
+      nextLevelNumber
+    );
+  };
+
+  const handleRequestHint = async () => {
+    if (hintUsed || !game || finalResult || submitting) return;
+    sounds.playPowerUp();
+    setHintUsed(true);
+    try {
+      const res = await gameService.usePowerUp(game.gameId, 'slice50', currentMin, currentMax);
+      if (res.newMin && res.newMin > currentMin) setCurrentMin(res.newMin);
+      if (res.newMax && res.newMax < currentMax) setCurrentMax(res.newMax);
+      setHintClue(`Helpful Clue: The secret number is between ${res.newMin || currentMin} and ${res.newMax || currentMax}!`);
+    } catch {
+      const mid = Math.floor((currentMin + currentMax) / 2);
+      setHintClue(`Helpful Clue: Try guessing ${mid} (the midpoint) to cut the remaining numbers in half!`);
+    }
+  };
+
   const handleToggleSound = () => {
     const newVal = sounds.toggleSound();
     setSoundEnabled(newVal);
     if (newVal) sounds.playClick();
+  };
+
+  const handleTogglePause = () => {
+    sounds.playClick();
+    setIsPaused((prev) => !prev);
+  };
+
+  const handleToggleReducedMotion = () => {
+    sounds.playClick();
+    setReducedMotion((prev) => {
+      const next = !prev;
+      localStorage.setItem('rtg_reduced_motion', String(next));
+      return next;
+    });
   };
 
   const triggerFloatingText = (text, bg) => {
@@ -244,6 +318,7 @@ const Game = () => {
   };
 
   const triggerShake = () => {
+    if (reducedMotion) return;
     setIsScreenShaking(true);
     setTimeout(() => setIsScreenShaking(false), 380);
   };
@@ -334,7 +409,7 @@ const Game = () => {
 
       // Audio feedback & range tracking
       if (response.result === 'CORRECT') {
-        setTriggerConfetti(true);
+        if (!reducedMotion) setTriggerConfetti(true);
         sounds.playWin();
         triggerFloatingText('🎉 BULLSEYE! PERFECT DEDUCTION!', 'linear-gradient(135deg, #10b981, #059669)');
       } else if (response.result === 'TOO_LOW') {
@@ -472,19 +547,34 @@ const Game = () => {
           winnerAnnouncement = `Game Over! All attempts exhausted.`;
         }
 
+        let levelProgResult = null;
+        if (response.status === 'WON' && gameLevel) {
+          levelProgResult = completeLevel(gameLevel, response.attemptsUsed, safeAttemptsAllowed);
+        }
+
+        const isWin = response.status === 'WON';
+        const stars = levelProgResult ? levelProgResult.stars : (isWin ? (response.attemptsUsed <= 3 ? 3 : response.attemptsUsed <= 5 ? 2 : 1) : 0);
+        const nextLevelNum = levelProgResult?.nextLevel || (gameLevel + 1);
+
         setFinalResult({
           gameId: game.gameId,
           status: response.status,
           difficulty: game.difficulty,
           gameMode: currentMode,
           playerMode: playerMode,
-          winner: response.status === 'WON' ? contender : null,
+          level: gameLevel,
+          nextLevel: nextLevelNum,
+          unlockedNext: levelProgResult?.unlockedNext ?? false,
+          stars,
+          secretNumber: response.secretNumber || num,
+          winningGuess: num,
+          winner: isWin ? contender : null,
           winnerAnnouncement,
           score: response.score,
           attemptsUsed: response.attemptsUsed,
-          attemptsAllowed: game.attemptsAllowed,
+          attemptsAllowed: safeAttemptsAllowed,
           timeTakenSeconds: timeTaken,
-          message: winnerAnnouncement,
+          message: isWin ? 'Amazing! You got it!' : 'Almost! Try again.',
           guesses: [
             {
               id: Date.now(),
@@ -507,9 +597,39 @@ const Game = () => {
     }
   };
 
+  const formatTime = (secs) => {
+    const safeSecs = Math.max(0, secs || 0);
+    const m = Math.floor(safeSecs / 60).toString().padStart(2, '0');
+    const s = (safeSecs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
+  const handlePickRandomNumber = () => {
+    sounds.playClick();
+    const min = currentMin || safeMin;
+    const max = currentMax || safeMax;
+    const guessedSet = new Set(guesses.map((g) => g.guessNumber));
+    const available = [];
+    for (let i = min; i <= max; i++) {
+      if (!guessedSet.has(i)) available.push(i);
+    }
+    const chosen = available.length > 0
+      ? available[Math.floor(Math.random() * available.length)]
+      : Math.floor(Math.random() * (max - min + 1)) + min;
+
+    setGuessInput(String(chosen));
+    if (error) setError('');
+    triggerFloatingText(`🎲 Random Pick: ${chosen}`, 'linear-gradient(135deg, #8b5cf6, #6366f1)');
+  };
+
   const handleGuessSubmit = async (e) => {
     if (e) e.preventDefault();
-    if (!guessInput || submitting || !game || finalResult || isCurrentAi || aiThinking) return;
+    if (submitting || !game || finalResult || isCurrentAi || aiThinking) return;
+
+    if (!guessInput || guessInput.trim() === '') {
+      setError('Please enter a number first.');
+      return;
+    }
 
     const num = parseInt(guessInput, 10);
     if (isNaN(num)) {
@@ -517,8 +637,15 @@ const Game = () => {
       return;
     }
 
-    if (num < game.minNumber || num > game.maxNumber) {
-      setError(`Guess must be within range ${game.minNumber} and ${game.maxNumber}.`);
+    const minBound = safeMin;
+    const maxBound = safeMax;
+    if (num < minBound || num > maxBound) {
+      setError(`Please guess a number between ${minBound} and ${maxBound}.`);
+      return;
+    }
+
+    if (guesses.some((g) => g.guessNumber === num)) {
+      setError(`You already guessed ${num}! Try a different number.`);
       return;
     }
 
@@ -533,14 +660,12 @@ const Game = () => {
 
   const handleRestart = () => {
     sounds.playClick();
-    initNewGame(game?.difficulty || initialDifficulty, game?.gameMode || currentMode, playerMode, roster);
+    initNewGame(game?.difficulty || initialDifficulty, game?.gameMode || currentMode, playerMode, roster, currentUser, gameLevel);
   };
 
   const handleExit = () => {
     sounds.playClick();
-    if (window.confirm('Are you sure you want to exit? Your current game progress will be lost.')) {
-      navigate('/dashboard');
-    }
+    navigate('/');
   };
 
   if (loading) {
@@ -585,539 +710,408 @@ const Game = () => {
   const modeBadge = getModeBadge();
 
   return (
-    <div className={`game-container container py-4 ${isScreenShaking ? 'screen-shake' : ''}`}>
+    <div className={`game-container collage-theme-body py-4 px-3 min-vh-100 d-flex flex-column align-items-center ${isScreenShaking ? 'screen-shake' : ''} ${reducedMotion ? 'reduced-motion' : ''}`}>
       {/* 60FPS Confetti & Floating Score Popups Engine */}
       <GameJuiceEffects
         triggerConfetti={triggerConfetti}
         floatingTexts={floatingTexts}
       />
 
-      {/* Top Header & Status Bar */}
-      <div className="card shadow-sm border-0 rounded-4 mb-4 bg-body">
-        <div className="card-body p-3 p-md-4">
-          <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
-            <div className="d-flex align-items-center gap-2">
-              <span className="fs-3">🎯</span>
-              <div>
-                <div className="d-flex align-items-center gap-2 mb-1">
-                  <h4 className="fw-bold mb-0">RANDOM THINKING</h4>
-                  <span className={`badge rounded-pill px-2.5 py-1 ${modeBadge.badge}`}>
-                    <i className={`bi ${modeBadge.icon} me-1`}></i>
-                    {modeBadge.label}
-                  </span>
-                </div>
-                <div className="d-flex align-items-center gap-2 small text-muted">
-                  <span>Difficulty: <strong className="text-primary">{game?.difficulty}</strong></span>
-                  <span>•</span>
-                  <span>Target Range: <strong className="text-dark font-monospace">{game?.minNumber} – {game?.maxNumber}</strong></span>
-                </div>
-              </div>
+      {/* Hidden Active Timer Engine */}
+      <Timer
+        isRunning={isTimerRunning && !isPaused}
+        initialSeconds={0}
+        onTick={(sec) => setElapsedSeconds(sec)}
+      />
+
+      <div className="container" style={{ maxWidth: '640px' }}>
+        
+        {/* Top Header Bar: Back Button, Level & Difficulty, Hearts (Lives) */}
+        <div className="d-flex justify-content-between align-items-center mb-3 px-1 flex-wrap gap-2">
+          {/* Back Button */}
+          <button
+            onClick={handleExit}
+            className="btn btn-outline-light rounded-pill px-3 py-1.5 fw-bold d-flex align-items-center gap-1.5 shadow-xs"
+            style={{ background: 'rgba(255, 255, 255, 0.08)', borderColor: 'rgba(255, 255, 255, 0.2)' }}
+            title="Back to Home"
+          >
+            <i className="bi bi-chevron-left"></i>
+            <span>Back</span>
+          </button>
+
+          {/* Level & Difficulty Badge */}
+          <div className="d-flex align-items-center gap-1.5">
+            <span
+              className="badge rounded-pill px-3 py-1.5 font-monospace fw-bold"
+              style={{ background: 'rgba(139, 92, 246, 0.25)', color: '#c084fc', border: '1px solid rgba(168, 85, 247, 0.4)' }}
+            >
+              Level {gameLevel}
+            </span>
+            <span
+              className="badge rounded-pill px-2.5 py-1.5 font-monospace fw-bold"
+              style={{ background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.35)' }}
+            >
+              {game?.difficulty || initialDifficulty}
+            </span>
+          </div>
+
+          {/* Remaining Lives / Hearts & Quick Actions */}
+          <div className="d-flex align-items-center gap-2">
+            {/* Lives Hearts */}
+            <div className="d-flex align-items-center" title={`${attemptsLeft} lives remaining`}>
+              {Array.from({ length: Math.min(safeAttemptsAllowed, 8) }).map((_, idx) => (
+                <span key={idx} className={idx < attemptsLeft ? 'heart-life' : 'heart-life-lost'}>
+                  ❤️
+                </span>
+              ))}
             </div>
 
-            <div className="d-flex align-items-center gap-2 flex-wrap">
-              {/* Board Theme & Pin Selector Pill */}
-              <ThemeSelectorPill />
+            {/* Sound Toggle */}
+            <button
+              type="button"
+              onClick={handleToggleSound}
+              className="btn btn-sm btn-outline-light rounded-circle p-0 d-flex align-items-center justify-content-center"
+              style={{ width: '32px', height: '32px', background: 'rgba(255, 255, 255, 0.08)', borderColor: 'rgba(255, 255, 255, 0.2)' }}
+              title={soundEnabled ? 'Mute Sound' : 'Enable Sound'}
+            >
+              <i className={`bi ${soundEnabled ? 'bi-volume-up-fill text-success' : 'bi-volume-mute-fill text-muted'}`}></i>
+            </button>
 
-              {/* Online / Offline Network Pill */}
-              <NetworkStatusPill />
-
-              {/* Interactive Audio Sound FX Pill with Animated Equalizer */}
-              <button
-                type="button"
-                onClick={handleToggleSound}
-                className={`btn btn-sm rounded-pill d-flex align-items-center gap-2 px-3 py-1.5 transition-all ${
-                  soundEnabled
-                    ? 'btn-outline-success border-success-subtle bg-success-subtle text-success'
-                    : 'btn-outline-secondary opacity-75'
-                }`}
-                title={soundEnabled ? 'Sound FX Enabled (Tap to mute)' : 'Sound Muted (Tap to enable)'}
-              >
-                <i className={`bi ${soundEnabled ? 'bi-volume-up-fill' : 'bi-volume-mute-fill'} fs-6`}></i>
-                <span className="small fw-bold font-monospace">{soundEnabled ? 'SFX ON' : 'MUTED'}</span>
-                {soundEnabled && (
-                  <span className="sound-equalizer-bars d-inline-flex gap-0.5 align-items-end" style={{ height: '12px' }}>
-                    <span className="eq-bar eq-bar-1"></span>
-                    <span className="eq-bar eq-bar-2"></span>
-                    <span className="eq-bar eq-bar-3"></span>
-                  </span>
-                )}
-              </button>
-
-              {/* Mode-specific timer */}
-              {currentMode === 'TIME_ATTACK' ? (
-                <div
-                  className={`blitz-timer-pill d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill ${
-                    timeAttackLeft <= 10 ? 'blitz-timer-critical' : ''
-                  }`}
-                  title="Blitz Countdown Time Remaining"
-                >
-                  <i className="bi bi-alarm-fill"></i>
-                  <span className="fs-5">{timeAttackLeft}s</span>
-                </div>
-              ) : (
-                <Timer
-                  isRunning={isTimerRunning}
-                  initialSeconds={0}
-                  onTick={(sec) => setElapsedSeconds(sec)}
-                />
-              )}
-
-              {playerMode !== 'SOLO' && (
-                <button
-                  onClick={() => {
-                    sounds.playClick();
-                    setShowRosterModal(true);
-                  }}
-                  className="btn btn-outline-secondary btn-sm rounded-pill d-flex align-items-center gap-1"
-                  title="Edit Player Names and Teams"
-                >
-                  <i className="bi bi-pencil-square"></i> Edit Teams & Players
-                </button>
-              )}
-              <button
-                onClick={handleRestart}
-                className="btn btn-outline-primary btn-sm rounded-pill d-flex align-items-center gap-1"
-                title="Restart Game"
-              >
-                <i className="bi bi-arrow-repeat"></i> Restart
-              </button>
-              <button
-                onClick={handleExit}
-                className="btn btn-outline-danger btn-sm rounded-pill d-flex align-items-center gap-1"
-                title="Exit Game"
-              >
-                <i className="bi bi-box-arrow-left"></i> Exit
-              </button>
-            </div>
+            {/* Pause Toggle */}
+            <button
+              type="button"
+              onClick={handleTogglePause}
+              className="btn btn-sm btn-outline-light rounded-circle p-0 d-flex align-items-center justify-content-center"
+              style={{ width: '32px', height: '32px', background: 'rgba(255, 255, 255, 0.08)', borderColor: 'rgba(255, 255, 255, 0.2)' }}
+              title={isPaused ? 'Resume' : 'Pause'}
+            >
+              <i className={`bi ${isPaused ? 'bi-play-fill text-warning' : 'bi-pause-fill text-white-50'}`}></i>
+            </button>
           </div>
         </div>
-      </div>
 
-      <ErrorMessage message={error} onDismiss={() => setError('')} />
-
-      {/* Clutch Final Attempt Sensory Vignette and Alert Banner */}
-      {isClutch && (
-        <>
-          <div className="clutch-vignette-overlay" aria-hidden="true"></div>
-          <div className="clutch-warning-banner card border-0 p-3 rounded-4 mb-4 text-center shadow-lg">
-            <div className="d-flex align-items-center justify-content-center gap-2">
-              <span className="fs-3">💓</span>
-              <h5 className="fw-bold mb-0">FINAL ATTEMPT CLUTCH! ONE GUESS REMAINS!</h5>
-              <span className="fs-3">💓</span>
-            </div>
-            <div className="small text-white-50 mt-1 font-monospace">
-              Adrenaline surging! Narrow your focus and execute the ultimate deduction!
-            </div>
+        {/* Clutch Warning Alert */}
+        {isClutch && (
+          <div className="alert alert-danger border-danger rounded-4 py-2 px-3 text-center mb-3 animate-pulse shadow-sm">
+            <strong className="d-block small">💓 FINAL ATTEMPT! ONE GUESS REMAINS!</strong>
           </div>
-        </>
-      )}
+        )}
 
-      {/* Sudden Death Extreme Stakes Banner */}
-      {currentMode === 'HARDCORE' && (
-        <div className="sudden-death-banner card border-0 text-white p-3 rounded-4 mb-4 shadow-sm">
-          <div className="d-flex align-items-center gap-3">
-            <span className="fs-1">💀</span>
-            <div>
-              <h6 className="fw-bold mb-1 text-danger">SUDDEN DEATH CHALLENGE • 3.0x REWARD MULTIPLIER</h6>
-              <p className="small text-white-50 mb-0">
-                Extremely limited attempts. Any mistake costs dear. Maintain composure and deduce the number!
+        {/* When Game is Over: Show Result Card */}
+        {finalResult ? (
+          <GameResult
+            result={finalResult}
+            onPlayAgain={handleRestart}
+            onNextLevel={handleStartNextLevel}
+            onHome={handleExit}
+          />
+        ) : (
+          /* Active Central Gameplay Panel Matching Collage */
+          <div className="collage-card p-4 p-md-5 text-center position-relative overflow-hidden shadow-2xl mb-4">
+            
+            {/* Friendly Instruction */}
+            <div className="mb-4">
+              <h2 className="display-6 fw-black text-white mb-1">
+                I'm thinking of a number between {safeMin} and {safeMax}.
+              </h2>
+              <p className="lead fw-bold mb-0" style={{ color: '#fbbf24' }}>
+                Can you guess it?
               </p>
             </div>
-          </div>
-        </div>
-      )}
 
-      {/* When Game is Over: Show Result Card */}
-      {finalResult ? (
-        <GameResult result={finalResult} onPlayAgain={handleRestart} />
-      ) : (
-        /* Active Game Arena */
-        <div>
-          {/* Boss Raid HP Matrix Bar (for 3v1 Boss Computer Mode) */}
-          {playerMode === '3P_VS_1CPU' && (
-            <BossRaidHud
-              bossName={aiContender?.name || 'MasterMind Boss Computer'}
-              minNumber={game?.minNumber || 1}
-              maxNumber={game?.maxNumber || 100}
-              currentMin={currentMin}
-              currentMax={currentMax}
-              attemptsRemaining={attemptsLeft}
-              isCurrentAiTurn={isCurrentAi}
-            />
-          )}
+            {/* Color-Coded Feedback Message Banner */}
+            {currentHint && (
+              <div
+                className={`p-3 mb-4 d-flex align-items-center justify-content-center gap-3 animate-pop-in ${
+                  currentHint.result === 'TOO_LOW'
+                    ? 'feedback-too-low'
+                    : currentHint.result === 'TOO_HIGH'
+                    ? 'feedback-too-high'
+                    : 'feedback-correct'
+                }`}
+              >
+                <span className="fs-2">
+                  {currentHint.result === 'TOO_LOW' ? '⬆️' : currentHint.result === 'TOO_HIGH' ? '⬇️' : '🎯'}
+                </span>
+                <div className="text-start">
+                  <h4 className="fw-black mb-0">
+                    {currentHint.result === 'TOO_LOW'
+                      ? 'Too Low!'
+                      : currentHint.result === 'TOO_HIGH'
+                      ? 'Too High!'
+                      : 'Correct!'}
+                  </h4>
+                  <span className="small">
+                    {currentHint.result === 'TOO_LOW'
+                      ? 'Try a higher number.'
+                      : currentHint.result === 'TOO_HIGH'
+                      ? 'Try a lower number.'
+                      : 'You guessed it!'}
+                  </span>
+                </div>
+              </div>
+            )}
 
-          {/* Turn & Matchup HUD Banner */}
-          <div className="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-body turn-hud-card">
-            <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-              <div className="d-flex align-items-center gap-2">
-                <span className="badge bg-primary rounded-pill px-3 py-1 font-monospace">
-                  <i className="bi bi-controller me-1"></i> {getPlayerModeTitle(playerMode)}
-                </span>
-                <span className="text-muted small">
-                  Turn {game?.attemptsUsed ? game.attemptsUsed + 1 : 1} of {game?.attemptsAllowed}
-                </span>
-                {playerMode !== 'SOLO' && (
+            {/* Error Message Alert */}
+            {error && (
+              <div className="alert alert-warning border-warning rounded-4 py-2 px-3 mb-3 small d-flex align-items-center justify-content-between animate-pop-in">
+                <span>⚠️ {error}</span>
+                <button
+                  type="button"
+                  className="btn-close btn-close-sm"
+                  onClick={() => setError('')}
+                ></button>
+              </div>
+            )}
+
+            {/* Large Number Input Field + Random Shortcut Button */}
+            <form onSubmit={handleGuessSubmit} className="mb-4">
+              <div className="d-flex align-items-center justify-content-center gap-2 mb-3">
+                <div style={{ maxWidth: '240px', width: '100%' }}>
+                  <input
+                    ref={inputRef}
+                    type="number"
+                    className="form-control collage-number-input"
+                    placeholder="?"
+                    value={guessInput}
+                    onChange={(e) => {
+                      setGuessInput(e.target.value);
+                      if (error) setError('');
+                    }}
+                    min={safeMin}
+                    max={safeMax}
+                    disabled={submitting || isCurrentAi || aiThinking}
+                    autoFocus
+                  />
+                </div>
+
+                {/* 🎲 Random Shortcut Button */}
+                <button
+                  type="button"
+                  onClick={handlePickRandomNumber}
+                  className="btn btn-collage-random px-3 py-2 d-flex flex-column align-items-center justify-content-center shadow-sm"
+                  title="Pick a random valid number"
+                  disabled={submitting || isCurrentAi || aiThinking}
+                  style={{ height: '70px', minWidth: '70px' }}
+                >
+                  <span className="fs-3">🎲</span>
+                  <span style={{ fontSize: '0.65rem', letterSpacing: '0.04em' }}>RANDOM</span>
+                </button>
+              </div>
+
+              {/* Prominent Green Submit Guess Button */}
+              <div className="text-center">
+                <button
+                  type="submit"
+                  disabled={submitting || !guessInput || isCurrentAi || aiThinking}
+                  className="btn btn-collage-submit btn-lg px-5 py-3.5 fs-3 w-100 shadow-lg d-inline-flex align-items-center justify-content-center gap-2"
+                  style={{ maxWidth: '380px' }}
+                >
+                  {submitting ? (
+                    <span>Checking...</span>
+                  ) : (
+                    <>
+                      <span>SUBMIT GUESS</span>
+                      <i className="bi bi-arrow-right-circle-fill fs-4"></i>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+
+            {/* Interactive Range Ruler (Candidate Window) */}
+            <div className="mb-3">
+              <InteractiveRangeRuler
+                minNumber={safeMin}
+                maxNumber={safeMax}
+                currentMin={currentMin}
+                currentMax={currentMax}
+                guesses={guesses}
+                currentGuess={guessInput}
+                onSelectNumber={(num) => {
+                  setGuessInput(String(num));
+                  if (error) setError('');
+                }}
+                disabled={submitting || isCurrentAi || aiThinking}
+              />
+            </div>
+
+            {/* Single Friendly Hint Button */}
+            <div className="text-center mb-3">
+              {hintClue ? (
+                <div className="alert alert-info border-info rounded-4 py-2 px-3 small my-1 animate-fade-in d-inline-flex align-items-center gap-2">
+                  <span>💡 {hintClue}</span>
                   <button
                     type="button"
-                    className="btn btn-sm btn-link text-decoration-none p-0 ms-2 text-primary fw-semibold"
-                    onClick={() => {
-                      sounds.playClick();
-                      setShowRosterModal(true);
-                    }}
-                    title="Edit Player Names and Teams"
-                  >
-                    <i className="bi bi-pencil-square me-1"></i> Edit Names & Teams
-                  </button>
-                )}
-              </div>
-              {isCurrentAi ? (
-                <span className="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1 rounded-pill animate-pulse">
-                  <i className="bi bi-cpu-fill me-1"></i> Computer Thinking...
-                </span>
+                    className="btn-close btn-close-sm"
+                    onClick={() => setHintClue('')}
+                  ></button>
+                </div>
               ) : (
-                <span className="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill">
-                  <i className="bi bi-person-check-fill me-1"></i> Your Move!
-                </span>
+                !hintUsed && (
+                  <button
+                    type="button"
+                    onClick={handleRequestHint}
+                    className="btn btn-outline-info rounded-pill px-4 py-1.5 fw-bold small"
+                    disabled={submitting || Boolean(finalResult)}
+                  >
+                    <i className="bi bi-lightbulb-fill text-warning me-1"></i> Need a Hint?
+                  </button>
+                )
               )}
             </div>
 
-            {/* Active Contender Spotlight */}
-            <div
-              className={`p-3 rounded-4 d-flex flex-wrap justify-content-between align-items-center gap-3 transition-all ${
-                isCurrentAi
-                  ? 'bg-danger-subtle border border-danger'
-                  : 'bg-primary-subtle border border-primary'
-              }`}
-            >
-              <div className="d-flex align-items-center gap-3">
-                <div
-                  className={`rounded-circle p-2 d-flex align-items-center justify-content-center text-white shadow-sm ${
-                    isCurrentAi ? 'bg-danger' : 'bg-primary'
-                  }`}
-                  style={{ width: '46px', height: '46px', fontSize: '1.3rem' }}
-                >
-                  <i className={`bi ${activeContender.icon || (isCurrentAi ? 'bi-cpu-fill' : 'bi-person-fill')}`}></i>
-                </div>
-                <div>
-                  <div className="small text-muted font-monospace text-uppercase" style={{ fontSize: '0.75rem' }}>
-                    CURRENT TURN:
-                  </div>
-                  <h5 className="fw-bold mb-0 text-body d-flex align-items-center gap-2">
-                    <span>{activeContender.name}</span>
-                    <span className="badge bg-body text-body-secondary border small font-monospace">
-                      {activeContender.team}
-                    </span>
-                  </h5>
+            {/* Three Small Information Cards at the Bottom */}
+            <div className="row g-2.5 mt-2 pt-3 border-top" style={{ borderColor: 'rgba(168, 85, 247, 0.2) !important' }}>
+              <div className="col-4">
+                <div className="collage-info-pill">
+                  <span className="label">Number Range</span>
+                  <div className="val">{safeMin} – {safeMax}</div>
                 </div>
               </div>
-
-              {/* Roster Order Pills */}
-              <div className="d-flex flex-wrap gap-1 align-items-center">
-                <span className="small text-muted me-1 font-monospace">Order:</span>
-                {roster.map((p, idx) => {
-                  const isTurn = idx === currentTurnIndex;
-                  return (
-                    <span
-                      key={p.id + '-' + idx}
-                      className={`badge rounded-pill px-2.5 py-1 font-monospace ${
-                        isTurn
-                          ? 'bg-primary text-white shadow-sm'
-                          : 'bg-body-secondary text-body-secondary'
-                      }`}
-                      style={{
-                        transform: isTurn ? 'scale(1.08)' : 'scale(1)',
-                        transition: 'all 0.2s ease',
-                      }}
-                    >
-                      {p.name}
-                    </span>
-                  );
-                })}
+              <div className="col-4">
+                <div className="collage-info-pill">
+                  <span className="label">Attempts</span>
+                  <div className="val">{game?.attemptsUsed || 0} / {safeAttemptsAllowed}</div>
+                </div>
               </div>
-            </div>
-          </div>
-
-          <div className="row g-4">
-            {/* Main Guessing Arena */}
-            <div className="col-lg-8">
-              <div className="card border-0 shadow-sm rounded-4 p-4 p-md-5 text-center bg-body h-100 guessing-box">
-                {/* Interactive Visual Range Ruler with Ice/Fire Pins & Draggable Slider */}
-                <InteractiveRangeRuler
-                  minNumber={game?.minNumber || 1}
-                  maxNumber={game?.maxNumber || 100}
-                  currentMin={currentMin}
-                  currentMax={currentMax}
-                  guesses={guesses}
-                  currentGuess={guessInput}
-                  onSelectNumber={(num) => setGuessInput(String(num))}
-                  disabled={submitting || isCurrentAi || aiThinking}
-                  gameMode={currentMode}
-                  proximity={proximity}
-                  customPin={getSelectedPin()}
-                />
-
-                {/* Real-Time Deduction IQ & Uncertainty Shrink Analytics */}
-                <DeductionAnalyticsBar
-                  minNumber={game?.minNumber || 1}
-                  maxNumber={game?.maxNumber || 100}
-                  currentMin={currentMin}
-                  currentMax={currentMax}
-                  guesses={guesses}
-                  comboCount={comboCount}
-                />
-
-                {/* Thinker's Tactical Toolbox Power-Ups */}
-                <PowerUpsBar
-                  powerUps={powerUps}
-                  onUsePowerUp={handleUsePowerUp}
-                  disabled={submitting || isCurrentAi || aiThinking || Boolean(finalResult)}
-                  isAiMatch={isAiMatch}
-                  oracleClue={oracleClue}
-                  onDismissOracle={() => setOracleClue(null)}
-                />
-
-                {/* Hot or Cold Proximity Heat Radar Bar */}
-                {currentMode === 'HOT_COLD' && proximity && (
-                  <div className="mb-4 p-3 rounded-4 bg-body-tertiary border text-center animate-pop-in">
-                    <div className="d-flex justify-content-between align-items-center text-muted small fw-bold mb-2">
-                      <span className="text-info">🧊 Freezing</span>
-                      <span className="text-primary">❄️ Chilly</span>
-                      <span className="text-warning">🌤️ Warm</span>
-                      <span className="text-danger">🔥 Hot</span>
-                      <span className="text-danger fw-black">🌋 Boiling!</span>
-                    </div>
-                    <div className="heat-radar-bar position-relative my-2">
-                      <div
-                        className="heat-needle"
-                        style={{ left: `${getProximityNeedlePercent()}%` }}
-                      ></div>
-                    </div>
-                    <div className="small fw-semibold mt-2 text-secondary">
-                      Proximity Status: <strong className="text-danger text-uppercase">{proximity.replace('_', ' ')}</strong>
-                    </div>
-                  </div>
-                )}
-
-                {/* Number Detective Dossier Card */}
-                {currentMode === 'DETECTIVE' && detectiveClues.length > 0 && (
-                  <div className="detective-dossier-card card p-3 rounded-4 mb-4 text-start shadow-sm">
-                    <div className="d-flex align-items-center gap-2 mb-2">
-                      <i className="bi bi-search-heart-fill text-info fs-5"></i>
-                      <h6 className="fw-bold mb-0 text-info">Detective's Secret Dossier (Clues Unlocked)</h6>
-                    </div>
-                    <div className="small">
-                      {detectiveClues.map((clue, idx) => (
-                        <div key={idx} className="detective-clue-item text-body">
-                          {clue}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Dynamic Hint Display */}
-                {currentHint && (
-                  <div
-                    className={`alert ${
-                      currentHint.result === 'CORRECT'
-                        ? 'alert-success'
-                        : currentHint.result === 'TOO_LOW'
-                        ? 'alert-info'
-                        : 'alert-warning'
-                    } d-flex align-items-center justify-content-center gap-2 py-3 px-4 rounded-4 shadow-sm mb-4 animate-pop-in`}
-                  >
-                    <span className="fs-4">
-                      {currentHint.result === 'TOO_LOW' ? '⬆️' : currentHint.result === 'TOO_HIGH' ? '⬇️' : '🎉'}
-                    </span>
-                    <div>
-                      <strong className="d-block">
-                        {currentHint.message}
-                      </strong>
-                      <span className="small text-muted">
-                        Last Guess by <strong className="text-primary">{currentHint.guesser?.name || 'Player'}</strong>: {currentHint.guess} (Attempt #{currentHint.attempt})
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Input Form */}
-                <form onSubmit={handleGuessSubmit} className="my-auto py-2">
-                  <label className="form-label text-muted small text-uppercase tracking-wider fw-bold mb-2">
-                    {isCurrentAi
-                      ? `🤖 ${activeContender.name} is calculating...`
-                      : `Enter ${activeContender.name}'s guess (${game?.minNumber} – ${game?.maxNumber}):`}
-                  </label>
-
-                  {isCurrentAi && (
-                    <div className="alert alert-danger-subtle text-danger border-0 rounded-4 py-2 px-3 mb-3 d-inline-flex align-items-center gap-2">
-                      <span className="spinner-border spinner-border-sm" role="status"></span>
-                      <span className="fw-semibold font-monospace small">
-                        {activeContender.name} is analyzing clue bounds [{currentMin} – {currentMax}]...
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="d-flex justify-content-center mb-3">
-                    <div className="guess-input-wrapper position-relative" style={{ maxWidth: '280px', width: '100%' }}>
-                      <input
-                        ref={inputRef}
-                        type="number"
-                        className="form-control form-control-lg text-center fw-bold fs-1 rounded-4 shadow-sm font-monospace guess-input"
-                        placeholder="?"
-                        value={guessInput}
-                        onChange={(e) => setGuessInput(e.target.value)}
-                        min={game?.minNumber}
-                        max={game?.maxNumber}
-                        disabled={submitting || isCurrentAi || aiThinking}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Quick Midpoint and Increment helpers */}
-                  <div className="d-flex justify-content-center gap-2 mb-4 flex-wrap">
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary btn-sm rounded-pill px-3"
-                      onClick={() => setGuessInput((prev) => Math.max(game?.minNumber || 1, (parseInt(prev, 10) || currentMin) - 1))}
-                      disabled={isCurrentAi || aiThinking}
-                    >
-                      -1
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary btn-sm rounded-pill px-3"
-                      onClick={() => setGuessInput((prev) => Math.max(game?.minNumber || 1, (parseInt(prev, 10) || currentMin) - 5))}
-                      disabled={isCurrentAi || aiThinking}
-                    >
-                      -5
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-outline-primary btn-sm rounded-pill px-3 fw-bold"
-                      onClick={() => setGuessInput(Math.floor((currentMin + currentMax) / 2))}
-                      disabled={isCurrentAi || aiThinking}
-                      title="Binary search midpoint deduction"
-                    >
-                      🎯 Mid: {Math.floor((currentMin + currentMax) / 2)}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary btn-sm rounded-pill px-3"
-                      onClick={() => setGuessInput((prev) => Math.min(game?.maxNumber || 100, (parseInt(prev, 10) || currentMin) + 5))}
-                      disabled={isCurrentAi || aiThinking}
-                    >
-                      +5
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary btn-sm rounded-pill px-3"
-                      onClick={() => setGuessInput((prev) => Math.min(game?.maxNumber || 100, (parseInt(prev, 10) || currentMin) + 1))}
-                      disabled={isCurrentAi || aiThinking}
-                    >
-                      +1
-                    </button>
-                  </div>
-
-                  {/* Thinking Matrix Virtual Numpad & Quick Probes */}
-                  <InteractiveNumpad
-                    currentGuess={guessInput}
-                    onUpdateGuess={(val) => setGuessInput(val)}
-                    onSubmitGuess={handleGuessSubmit}
-                    currentMin={currentMin}
-                    currentMax={currentMax}
-                    minNumber={game?.minNumber || 1}
-                    maxNumber={game?.maxNumber || 100}
-                    disabled={submitting || isCurrentAi || aiThinking}
-                  />
-
-                  <button
-                    type="submit"
-                    className="btn btn-primary btn-lg px-5 py-3 rounded-pill fw-bold shadow-lg w-100 hover-scale"
-                    style={{ maxWidth: '340px' }}
-                    disabled={submitting || !guessInput || isCurrentAi || aiThinking}
-                  >
-                    {submitting ? (
-                      <span>
-                        <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                        Evaluating...
-                      </span>
-                    ) : isCurrentAi ? (
-                      <span>
-                        <i className="bi bi-cpu-fill me-2"></i> COMPUTER THINKING...
-                      </span>
-                    ) : (
-                      <span>
-                        <i className="bi bi-send-fill me-2"></i> SUBMIT GUESS ({activeContender.name})
-                      </span>
-                    )}
-                  </button>
-                </form>
+              <div className="col-4">
+                <div className="collage-info-pill">
+                  <span className="label">Time</span>
+                  <div className="val">{formatTime(elapsedSeconds)}</div>
+                </div>
               </div>
             </div>
 
-            {/* Side Info Panel: Attempts, Score, Guess Logs */}
-            <div className="col-lg-4">
-              <div className="d-flex flex-column gap-3">
-                <AttemptCounter
-                  attemptsUsed={game?.attemptsUsed || 0}
-                  attemptsAllowed={game?.attemptsAllowed || 7}
-                />
+            {/* Collapsible Session Guesses & Advanced Tools */}
+            <div className="mt-3 text-center">
+              <button
+                type="button"
+                onClick={() => setShowOptionalTools(!showOptionalTools)}
+                className="btn btn-link btn-sm text-decoration-none text-white-50 p-0"
+              >
+                {showOptionalTools ? '▲ Hide Guesses & Tools' : `▼ View Guesses in this Session (${guesses.length})`}
+              </button>
 
-                <ScoreCard
-                  score={game?.score || 0}
-                  difficulty={game?.difficulty}
-                  attemptsUsed={game?.attemptsUsed || 0}
-                  attemptsAllowed={game?.attemptsAllowed || 7}
-                />
-
-                {/* Guess History List */}
-                <div className="card border-0 shadow-sm rounded-4 p-3 bg-body">
-                  <h6 className="fw-bold mb-3 d-flex justify-content-between align-items-center">
-                    <span><i className="bi bi-list-check text-primary me-1"></i> Guesses in this Session</span>
-                    <span className="badge bg-secondary-subtle text-body-secondary font-monospace">
-                      {guesses.length}
-                    </span>
-                  </h6>
-
-                  {guesses.length === 0 ? (
-                    <p className="text-muted small text-center my-3">
-                      No guesses made yet. Make your first move!
-                    </p>
-                  ) : (
-                    <div className="guess-history-list overflow-auto" style={{ maxHeight: '240px' }}>
+              {showOptionalTools && (
+                <div className="mt-3 text-start animate-fade-in">
+                  {guesses.length > 0 ? (
+                    <div className="guess-history-list overflow-auto p-2 rounded-3 mb-3" style={{ maxHeight: '180px', background: 'rgba(0,0,0,0.3)' }}>
                       {guesses.map((g) => (
                         <div
                           key={g.id || g.attemptNumber}
-                          onClick={() => {
-                            if (!isCurrentAi && !submitting && !aiThinking) {
-                              setGuessInput(String(g.guessNumber));
-                              sounds.playClick();
-                              triggerFloatingText(`Recalled #${g.guessNumber}`, 'linear-gradient(135deg, #0d6efd, #0284c7)');
-                            }
-                          }}
-                          className="guess-history-item d-flex justify-content-between align-items-center p-2 mb-1.5 rounded-3 bg-body-tertiary border small"
-                          title="Click to recall this guess number into input"
+                          className="d-flex justify-content-between align-items-center p-2 mb-1 rounded-2 bg-dark bg-opacity-40 small font-monospace"
                         >
-                          <span className="text-muted font-monospace">#{g.attemptNumber}</span>
-                          <span className="badge bg-secondary-subtle text-body-secondary font-monospace text-truncate" style={{ maxWidth: '90px' }} title={g.guesserName}>
-                            {g.guesserName || 'Player'}
-                          </span>
-                          <span className="fw-bold fs-6 font-monospace">{g.guessNumber}</span>
-                          <span>
-                            {g.result === 'CORRECT' ? (
-                              <span className="badge bg-success">CORRECT 🎯</span>
-                            ) : g.result === 'TOO_LOW' ? (
-                              <span className="badge bg-info text-dark">TOO LOW ⬆️</span>
-                            ) : (
-                              <span className="badge bg-warning text-dark">TOO HIGH ⬇️</span>
-                            )}
+                          <span className="text-white-50">#{g.attemptNumber}</span>
+                          <strong className="fs-6 text-white">{g.guessNumber}</strong>
+                          <span className={g.result === 'CORRECT' ? 'text-success' : g.result === 'TOO_LOW' ? 'text-info' : 'text-warning'}>
+                            {g.result === 'CORRECT' ? 'CORRECT 🎯' : g.result === 'TOO_LOW' ? 'TOO LOW ⬆️' : 'TOO HIGH ⬇️'}
                           </span>
                         </div>
                       ))}
                     </div>
+                  ) : (
+                    <p className="text-white-50 small text-center my-2">No guesses submitted yet.</p>
                   )}
+
+                  <PowerUpsBar
+                    powerUps={powerUps}
+                    onUsePowerUp={handleUsePowerUp}
+                    disabled={submitting || isCurrentAi || aiThinking || Boolean(finalResult)}
+                    isAiMatch={isAiMatch}
+                    oracleClue={oracleClue}
+                    onDismissOracle={() => setOracleClue(null)}
+                  />
                 </div>
+              )}
+            </div>
+
+          </div>
+        )}
+
+      </div>
+
+      {/* Pause Modal Overlay */}
+      {isPaused && (
+        <div
+          className="modal fade show d-block"
+          tabIndex="-1"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)', backdropFilter: 'blur(5px)', zIndex: 1060 }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content rounded-4 border-0 shadow-lg bg-body text-center p-4">
+              <div className="display-4 mb-2">⏸️</div>
+              <h3 className="fw-bold mb-1">Game Paused</h3>
+              <p className="text-muted small mb-4">Timer and opponents are frozen. Take a breath or adjust settings.</p>
+
+              <div className="row g-2 mb-4 text-center">
+                <div className="col-4">
+                  <div className="p-2 bg-body-tertiary rounded-3 border">
+                    <span className="d-block text-muted small">Attempts</span>
+                    <strong className="fs-6 font-monospace">{game?.attemptsUsed || 0}/{game?.attemptsAllowed || 7}</strong>
+                  </div>
+                </div>
+                <div className="col-4">
+                  <div className="p-2 bg-body-tertiary rounded-3 border">
+                    <span className="d-block text-muted small">Time</span>
+                    <strong className="fs-6 font-monospace">{currentMode === 'TIME_ATTACK' ? `${timeAttackLeft}s` : `${elapsedSeconds}s`}</strong>
+                  </div>
+                </div>
+                <div className="col-4">
+                  <div className="p-2 bg-body-tertiary rounded-3 border">
+                    <span className="d-block text-muted small">Range</span>
+                    <strong className="fs-6 font-monospace">{currentMin}–{currentMax}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* In-Game Accessibility & Sensory Toggles */}
+              <div className="d-flex justify-content-center gap-2 mb-4 flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleToggleSound}
+                  className={`btn btn-sm rounded-pill px-3 py-1.5 ${soundEnabled ? 'btn-outline-success' : 'btn-outline-secondary'}`}
+                >
+                  <i className={`bi ${soundEnabled ? 'bi-volume-up-fill' : 'bi-volume-mute-fill'} me-1`}></i>
+                  {soundEnabled ? 'Sound FX ON' : 'Sound Muted'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleToggleReducedMotion}
+                  className={`btn btn-sm rounded-pill px-3 py-1.5 ${reducedMotion ? 'btn-outline-warning' : 'btn-outline-secondary'}`}
+                >
+                  <i className="bi bi-eye-slash-fill me-1"></i>
+                  {reducedMotion ? 'Reduced Motion ON' : 'Animations Full'}
+                </button>
+              </div>
+
+              <div className="d-grid gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsPaused(false)}
+                  className="btn btn-primary btn-lg rounded-pill fw-bold shadow-sm"
+                >
+                  <i className="bi bi-play-fill me-1"></i> Resume Game
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsPaused(false);
+                    handleRestart();
+                  }}
+                  className="btn btn-outline-primary rounded-pill"
+                >
+                  <i className="bi bi-arrow-repeat me-1"></i> Restart Match
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExit}
+                  className="btn btn-outline-danger rounded-pill"
+                >
+                  <i className="bi bi-box-arrow-left me-1"></i> Exit Game
+                </button>
               </div>
             </div>
           </div>

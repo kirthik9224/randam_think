@@ -33,8 +33,15 @@ public class PlayerService {
 
     @Transactional(readOnly = true)
     public PlayerProfileDTO getProfile(Long playerId) {
-        Player player = playerRepository.findById(playerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Player not found with ID: " + playerId));
+        Player player = null;
+        if (playerId != null) {
+            player = playerRepository.findById(playerId).orElse(null);
+        }
+        if (player == null) {
+            // Gracefully fallback to Guest Player instead of throwing 404
+            player = playerRepository.findByUsername("Guest Explorer")
+                    .orElseGet(() -> new Player("Guest Explorer", "guest@randomthinkinggame.local", "guest-no-password", "GUEST"));
+        }
 
         List<Game> games = gameRepository.findByPlayerIdOrderByStartedAtDesc(playerId);
 

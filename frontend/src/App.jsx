@@ -19,6 +19,7 @@ import sounds from './utils/soundEffects';
 import { applyThemeClass } from './utils/themeHelper';
 import './styles/App.css';
 import './styles/Themes.css';
+import './styles/CollageGameTheme.css';
 
 function App() {
   const [darkMode, setDarkMode] = useState(() => {
@@ -73,7 +74,7 @@ function App() {
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowGuest={true}>
                   <Dashboard />
                 </ProtectedRoute>
               }
@@ -81,7 +82,7 @@ function App() {
             <Route
               path="/game"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowGuest={true}>
                   <Game />
                 </ProtectedRoute>
               }
@@ -89,7 +90,7 @@ function App() {
             <Route
               path="/result"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowGuest={true}>
                   <Result />
                 </ProtectedRoute>
               }
@@ -97,7 +98,7 @@ function App() {
             <Route
               path="/result/:gameId"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowGuest={true}>
                   <Result />
                 </ProtectedRoute>
               }
@@ -105,7 +106,7 @@ function App() {
             <Route
               path="/history"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowGuest={true}>
                   <History />
                 </ProtectedRoute>
               }
@@ -113,7 +114,7 @@ function App() {
             <Route
               path="/profile"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowGuest={false}>
                   <Profile />
                 </ProtectedRoute>
               }

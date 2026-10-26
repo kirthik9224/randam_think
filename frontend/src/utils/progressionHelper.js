@@ -1,6 +1,7 @@
 // Progression System: XP, Player Levels, Rank Titles and Rewards
 const STORAGE_XP = 'rtg_player_xp';
 const STORAGE_STATS = 'rtg_progression_stats';
+const STORAGE_AWARDED_GAMES = 'rtg_awarded_game_ids';
 
 const RANK_TIERS = [
   { minLevel: 50, title: 'Cosmic Thinker', icon: 'bi-stars', color: '#ec4899', badge: 'bg-danger text-white' },
@@ -60,6 +61,33 @@ export const getPlayerProgression = () => {
 };
 
 export const awardGameXp = (gameResult, isDailyChallenge = false) => {
+  if (!gameResult) {
+    const prog = getPlayerProgression();
+    return { earnedXp: 0, breakdown: [], prevProg: prog, newProg: prog, leveledUp: false };
+  }
+
+  // Deduplicate rewards: Never award duplicate rewards from repeated requests or page refreshes
+  const gameId = gameResult.gameId || (gameResult.startedAt ? `${gameResult.startedAt}_${gameResult.attemptsUsed}` : null);
+  if (gameId) {
+    try {
+      const awardedRaw = localStorage.getItem(STORAGE_AWARDED_GAMES) || '[]';
+      const awardedIds = JSON.parse(awardedRaw);
+      if (awardedIds.includes(String(gameId))) {
+        const prog = getPlayerProgression();
+        return {
+          earnedXp: 0,
+          breakdown: [],
+          prevProg: prog,
+          newProg: prog,
+          leveledUp: false,
+          alreadyAwarded: true,
+        };
+      }
+      awardedIds.push(String(gameId));
+      if (awardedIds.length > 200) awardedIds.shift();
+      localStorage.setItem(STORAGE_AWARDED_GAMES, JSON.stringify(awardedIds));
+    } catch (e) {}
+  }
   const isWon = gameResult?.status === 'WON';
   const attemptsAllowed = gameResult?.attemptsAllowed || 7;
   const attemptsUsed = gameResult?.attemptsUsed || attemptsAllowed;

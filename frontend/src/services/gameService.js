@@ -3,21 +3,28 @@ import { isOnline } from '../utils/networkHelper';
 import offlineGameEngine from '../utils/offlineGameEngine';
 
 export const gameService = {
-  async startGame(playerId, difficulty, gameMode = 'CLASSIC', playerMode = 'SOLO') {
+  async startGame(playerId, difficulty, gameMode = 'CLASSIC', playerMode = 'SOLO', customOptions = {}) {
     if (!isOnline()) {
-      return offlineGameEngine.startOfflineGame(playerId, difficulty, gameMode, playerMode);
+      return offlineGameEngine.startOfflineGame(playerId, difficulty, gameMode, playerMode, customOptions);
     }
     try {
-      const response = await api.post('/games/start', {
+      const payload = {
         playerId,
         difficulty,
         gameMode,
         playerMode,
-      });
-      return response.data;
+        minNumber: customOptions.minNumber,
+        maxNumber: customOptions.maxNumber,
+        attemptsAllowed: customOptions.attemptsAllowed,
+        level: customOptions.level,
+      };
+      const response = await api.post('/games/start', payload);
+      const data = response.data;
+      if (customOptions.level) data.level = customOptions.level;
+      return data;
     } catch (err) {
       console.warn('Backend start game unreachable, falling back to offline game engine:', err);
-      return offlineGameEngine.startOfflineGame(playerId, difficulty, gameMode, playerMode);
+      return offlineGameEngine.startOfflineGame(playerId, difficulty, gameMode, playerMode, customOptions);
     }
   },
 
@@ -31,6 +38,9 @@ export const gameService = {
       });
       return response.data;
     } catch (err) {
+      if (err.message && (err.message.includes('already guessed') || err.message.includes('between') || err.message.includes('finished'))) {
+        throw err;
+      }
       console.warn('Backend guess unreachable, evaluating offline:', err);
       return offlineGameEngine.makeOfflineGuess(gameId, guess);
     }

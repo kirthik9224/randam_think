@@ -39,8 +39,20 @@ public class GameService {
 
     @Transactional
     public GameResponse startGame(GameStartRequest request) {
-        Player player = playerRepository.findById(request.getPlayerId())
-                .orElseThrow(() -> new ResourceNotFoundException("Player not found with ID: " + request.getPlayerId()));
+        Player player = null;
+        if (request.getPlayerId() != null && request.getPlayerId() > 0 && request.getPlayerId() != 999999L) {
+            player = playerRepository.findById(request.getPlayerId()).orElse(null);
+        }
+        if (player == null) {
+            player = playerRepository.findByEmail("guest@randomthinkinggame.local")
+                    .or(() -> playerRepository.findByUsername("Guest Explorer"))
+                    .orElseGet(() -> playerRepository.save(new Player(
+                            "Guest Explorer",
+                            "guest@randomthinkinggame.local",
+                            "guest-no-password",
+                            "GUEST"
+                    )));
+        }
 
         String diff = request.getDifficulty() != null ? request.getDifficulty().toUpperCase().trim() : "MEDIUM";
         String mode = request.getGameMode() != null ? request.getGameMode().toUpperCase().trim() : "CLASSIC";
@@ -56,29 +68,34 @@ public class GameService {
             playerMode = "SOLO";
         }
 
-        int minNumber = 1;
+        int minNumber = request.getMinNumber() != null ? request.getMinNumber() : 1;
         int maxNumber;
         int attemptsAllowed;
 
-        switch (diff) {
-            case "EASY":
-                maxNumber = 50;
-                attemptsAllowed = 10;
-                break;
-            case "HARD":
-                maxNumber = 500;
-                attemptsAllowed = 5;
-                break;
-            case "EXPERT":
-                maxNumber = 1000;
-                attemptsAllowed = 3;
-                break;
-            case "MEDIUM":
-            default:
-                diff = "MEDIUM";
-                maxNumber = 100;
-                attemptsAllowed = 7;
-                break;
+        if (request.getMaxNumber() != null && request.getMaxNumber() > minNumber) {
+            maxNumber = request.getMaxNumber();
+            attemptsAllowed = request.getAttemptsAllowed() != null ? request.getAttemptsAllowed() : 7;
+        } else {
+            switch (diff) {
+                case "EASY":
+                    maxNumber = 20;
+                    attemptsAllowed = 10;
+                    break;
+                case "HARD":
+                    maxNumber = 500;
+                    attemptsAllowed = 5;
+                    break;
+                case "EXPERT":
+                    maxNumber = 1000;
+                    attemptsAllowed = 3;
+                    break;
+                case "MEDIUM":
+                default:
+                    diff = "MEDIUM";
+                    maxNumber = 100;
+                    attemptsAllowed = 7;
+                    break;
+            }
         }
 
         // Scale attempts for team and multiplayer matches so all players have ample turns
@@ -114,6 +131,16 @@ public class GameService {
         }
 
         int guessNum = request.getGuess();
+        if (guessNum < game.getMinNumber() || guessNum > game.getMaxNumber()) {
+            throw new BadRequestException("Guess must be between " + game.getMinNumber() + " and " + game.getMaxNumber() + ".");
+        }
+
+        boolean alreadyGuessed = guessRepository.findByGameIdOrderByAttemptNumberAsc(gameId).stream()
+                .anyMatch(g -> g.getGuessNumber() == guessNum);
+        if (alreadyGuessed) {
+            throw new BadRequestException("You have already guessed number " + guessNum + " in this game session.");
+        }
+
         int attemptsUsed = game.getAttemptsUsed() + 1;
         game.setAttemptsUsed(attemptsUsed);
 
@@ -149,7 +176,7 @@ public class GameService {
 
         if (guessNum == secret) {
             result = "CORRECT";
-            message = "Congratulations! You guessed the secret number!";
+            message = "Correct — you win!";
             game.setStatus("WON");
             game.setCompletedAt(LocalDateTime.now());
             int calculatedScore = calculateScore(game);
@@ -171,7 +198,7 @@ public class GameService {
                 } else if ("TIME_ATTACK".equals(mode)) {
                     message = "⚡ TOO LOW! Aim higher and keep moving fast!";
                 } else {
-                    message = "Try a higher number!";
+                    message = "Too Low — try a bigger number.";
                 }
             }
         } else {
@@ -190,7 +217,7 @@ public class GameService {
                 } else if ("TIME_ATTACK".equals(mode)) {
                     message = "⚡ TOO HIGH! Aim lower and keep moving fast!";
                 } else {
-                    message = "Try a lower number!";
+                    message = "Too High — try a smaller number.";
                 }
             }
         }
@@ -299,8 +326,9 @@ public class GameService {
 
     @Transactional(readOnly = true)
     public List<GameResponse> getPlayerHistory(Long playerId) {
-        if (!playerRepository.existsById(playerId)) {
-            throw new ResourceNotFoundException("Player not found with ID: " + playerId);
+        if (playerId == null || !playerRepository.existsById(playerId)) {
+            // Gracefully return empty list for guests / new players instead of 404
+            return List.of();
         }
         List<Game> games = gameRepository.findByPlayerIdOrderByStartedAtDesc(playerId);
         return games.stream().map(this::mapToGameResponse).collect(Collectors.toList());
@@ -366,7 +394,7 @@ public class GameService {
         // Time deduction
         long secondsElapsed = 0;
         if (game.getCompletedAt() != null && game.getStartedAt() != null) {
-            secondsElapsed = Duration.between(game.getStartedAt(), game.getCompletedAt()).getSeconds();
+            secondsElapsed = Math.max(0, Duration.between(game.getStartedAt(), game.getCompletedAt()).getSeconds());
         }
         double timePenalty = secondsElapsed * 3.0 * multiplier;
 
@@ -402,6 +430,10 @@ public class GameService {
 
         switch (type.toLowerCase()) {
             case "slice50":
+                if (game.isSlice50Used()) {
+                    throw new BadRequestException("Quantum Slice power-up has already been used in this game.");
+                }
+                game.setSlice50Used(true);
                 int min = Math.max(game.getMinNumber(), currentMin);
                 int max = Math.min(game.getMaxNumber(), currentMax);
                 int lowerFalseSpan = Math.max(0, secret - min);
@@ -427,6 +459,7 @@ public class GameService {
                     slicedCount = 0;
                 }
 
+                gameRepository.save(game);
                 result.put("newMin", newMin);
                 result.put("newMax", newMax);
                 result.put("slicedDirection", slicedDirection);
@@ -435,6 +468,12 @@ public class GameService {
                 break;
 
             case "oracle":
+                if (game.isOracleUsed()) {
+                    throw new BadRequestException("Oracle Clue power-up has already been used in this game.");
+                }
+                game.setOracleUsed(true);
+                gameRepository.save(game);
+
                 String clue;
                 if (secret % 2 == 0) {
                     clue = "The secret number is EVEN.";
@@ -464,6 +503,10 @@ public class GameService {
                 break;
 
             case "shield":
+                if (game.isShieldUsed()) {
+                    throw new BadRequestException("Second Chance Shield power-up has already been used in this game.");
+                }
+                game.setShieldUsed(true);
                 game.setAttemptsAllowed(game.getAttemptsAllowed() + 1);
                 gameRepository.save(game);
                 result.put("attemptsAllowed", game.getAttemptsAllowed());
@@ -472,6 +515,11 @@ public class GameService {
                 break;
 
             case "empfreeze":
+                if (game.isEmpFreezeUsed()) {
+                    throw new BadRequestException("Turn Freeze power-up has already been used in this game.");
+                }
+                game.setEmpFreezeUsed(true);
+                gameRepository.save(game);
                 result.put("message", "Turn Freeze activated! Opponent's next turn has been skipped!");
                 break;
 

@@ -1,304 +1,196 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import sounds from '../utils/soundEffects';
-import { awardGameXp } from '../utils/progressionHelper';
+import '../styles/CollageGameTheme.css';
 
-const GameResult = ({ result, onPlayAgain }) => {
+const GameResult = ({ result, onPlayAgain, onNextLevel, onHome }) => {
+  const navigate = useNavigate();
   const isWon = result?.status === 'WON';
-  const [copied, setCopied] = useState(false);
-  const [xpResult, setXpResult] = useState(null);
+  const stars = result?.stars || (isWon ? 2 : 0);
+  const currentLvl = result?.level || 1;
+  const nextLvl = result?.nextLevel || (currentLvl + 1);
+  const hasNextLevel = isWon && nextLvl <= 12 && nextLvl > currentLvl;
+
+  const secretNumber = result?.secretNumber || result?.winningGuess || '?';
+  const attemptsUsed = result?.attemptsUsed || 0;
+  const attemptsAllowed = result?.attemptsAllowed || 7;
+  const timeTaken = result?.timeTakenSeconds || 0;
 
   useEffect(() => {
-    // Award XP
-    const awarded = awardGameXp(result);
-    setXpResult(awarded);
-
     if (isWon) {
       sounds.playWin();
       try {
         confetti({
           particleCount: 120,
-          spread: 70,
+          spread: 80,
           origin: { y: 0.6 },
         });
-        setTimeout(() => {
-          confetti({
-            particleCount: 60,
-            angle: 60,
-            spread: 55,
-            origin: { x: 0 },
-          });
-          confetti({
-            particleCount: 60,
-            angle: 120,
-            spread: 55,
-            origin: { x: 1 },
-          });
-        }, 300);
-
-        if (awarded.leveledUp) {
-          setTimeout(() => {
-            confetti({
-              particleCount: 150,
-              spread: 100,
-              origin: { y: 0.4 },
-            });
-          }, 800);
-        }
       } catch (e) {
         console.warn('Confetti error', e);
       }
     } else {
       sounds.playGameOver();
     }
-  }, [isWon, result]);
+  }, [isWon]);
 
-  // Generate Wordle-Style Share Card
-  const generateShareText = () => {
-    const diffEmoji =
-      result?.difficulty === 'EASY'
-        ? '🟢 EASY'
-        : result?.difficulty === 'HARD'
-        ? '🔥 HARD'
-        : result?.difficulty === 'EXPERT'
-        ? '💀 EXPERT'
-        : '⚡ MEDIUM';
-
-    const statusHeader = isWon
-      ? `VICTORY! 🎯 (${result?.attemptsUsed}/${result?.attemptsAllowed} attempts in ${result?.timeTakenSeconds || 0}s)`
-      : `DEFEATED 💀 (Exhausted ${result?.attemptsAllowed} attempts)`;
-
-    const guessHistory = result?.guesses || [];
-    let emojiTrail = '';
-
-    if (guessHistory.length > 0) {
-      // Sort oldest to newest
-      const sorted = [...guessHistory].sort((a, b) => (a.attemptNumber || 0) - (b.attemptNumber || 0));
-      sorted.forEach((g) => {
-        if (g.result === 'CORRECT') emojiTrail += '🎯 🟩 BULLSEYE!\n';
-        else if (g.proximity === 'BOILING_HOT') emojiTrail += '🌋 🟨 Boiling Hot!\n';
-        else if (g.result === 'TOO_LOW') emojiTrail += '⬆️ 🟦 Too Low\n';
-        else if (g.result === 'TOO_HIGH') emojiTrail += '⬇️ 🟧 Too High\n';
+  const handleNext = () => {
+    sounds.playClick();
+    if (onNextLevel) {
+      onNextLevel(nextLvl);
+    } else {
+      navigate('/game', {
+        state: { level: nextLvl },
       });
-    } else {
-      emojiTrail = isWon ? '🎯 🟩 Solved the puzzle!' : '❌ Out of attempts';
-    }
-
-    return `🧠 RANDOM THINKING GAME
-Difficulty: ${diffEmoji} | Mode: ${result?.gameMode || 'CLASSIC'}
-Status: ${statusHeader}
-Final Score: ${result?.score || 0} pts
-
-${emojiTrail}
-Can you deduce the secret number faster?
-👉 Play here: ${window.location.origin}`;
-  };
-
-  const handleCopyShare = async () => {
-    sounds.playClick();
-    const text = generateShareText();
-    try {
-      if (navigator.clipboard) {
-        await navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 3000);
-      }
-    } catch (e) {
-      console.warn('Clipboard copy error', e);
     }
   };
 
-  const handleNativeShare = async () => {
+  const handleRetry = () => {
     sounds.playClick();
-    const text = generateShareText();
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Random Thinking Game Score',
-          text,
-          url: window.location.origin,
-        });
-      } catch (e) {}
+    if (onPlayAgain) {
+      onPlayAgain();
     } else {
-      handleCopyShare();
+      navigate('/game', {
+        state: { level: currentLvl },
+      });
+    }
+  };
+
+  const handleGoHome = () => {
+    sounds.playClick();
+    if (onHome) {
+      onHome();
+    } else {
+      navigate('/');
     }
   };
 
   return (
-    <div className="card shadow-lg border-0 text-center result-card overflow-hidden my-4 animate-fade-in">
-      <div className={`card-header py-4 text-white ${isWon ? 'bg-success' : 'bg-danger'}`}>
-        <div className="display-1 mb-2">{isWon ? '🏆' : '💀'}</div>
-        <h2 className="display-6 fw-bold mb-1">{isWon ? 'VICTORY!' : 'GAME OVER!'}</h2>
-        <p className="lead mb-0 text-white-50">
-          {isWon
-            ? 'Awesome thinking! You mastered the Random Thinking challenge.'
-            : 'Better luck next time! Maximum attempts reached.'}
-        </p>
+    <div
+      className={`card border-0 text-center text-white overflow-hidden my-4 animate-fade-in mx-auto p-4 p-md-5 shadow-2xl ${
+        isWon ? 'victory-card-collage' : 'gameover-card-collage'
+      }`}
+      style={{ maxWidth: '580px' }}
+    >
+      {/* Trophy or Game Over Icon */}
+      <div className="mb-3">
+        <div
+          className="rounded-circle mx-auto d-flex align-items-center justify-content-center shadow-lg"
+          style={{
+            width: '90px',
+            height: '90px',
+            fontSize: '3rem',
+            background: isWon ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)',
+            border: isWon ? '2px solid #10b981' : '2px solid #ef4444',
+            boxShadow: isWon ? '0 0 25px rgba(16, 185, 129, 0.5)' : '0 0 25px rgba(239, 68, 68, 0.5)',
+          }}
+        >
+          {isWon ? '🏆' : '💔'}
+        </div>
       </div>
 
-      <div className="card-body p-4 p-md-5">
-        {/* Level Up Banner */}
-        {xpResult?.leveledUp && (
-          <div className="alert alert-warning border-2 border-warning rounded-4 py-3 px-4 mb-4 fw-bold shadow-sm animate-bounce text-dark">
-            <div className="fs-3 mb-1">🎉 LEVEL UP!</div>
-            <div className="fs-5 mb-0">
-              You achieved <strong>Level {xpResult.newLevel}</strong>: <span className="badge bg-dark text-warning">{xpResult.newRankTitle}</span>!
-            </div>
-          </div>
-        )}
+      {/* Main Announcement Header */}
+      <h2 className="display-6 fw-black mb-1">
+        {isWon ? 'Congratulations!' : 'Game Over!'}
+      </h2>
+      <p className="fs-5 mb-4 fw-medium text-white-50">
+        {isWon ? 'You guessed the number!' : 'You used all your attempts.'}
+      </p>
 
-        {/* Winner Announcement for Multiplayer */}
-        {result?.winnerAnnouncement && (
-          <div className="alert alert-primary rounded-4 py-3 px-4 mb-4 fw-bold shadow-sm border-2">
-            <div className="fs-4 mb-1">{result.winnerAnnouncement}</div>
-            {result.winner && (
-              <div className="small text-muted font-monospace">
-                Winning Contender: <strong className="text-primary">{result.winner.name}</strong> ({result.winner.team})
-              </div>
-            )}
+      {/* Star Rating for Victory */}
+      {isWon && (
+        <div className="p-2.5 rounded-4 mb-4 mx-auto" style={{ background: 'rgba(0, 0, 0, 0.35)', maxWidth: '340px' }}>
+          <div className="display-5 text-warning mb-1">
+            {stars === 3 ? '⭐⭐⭐' : stars === 2 ? '⭐⭐' : '⭐'}
           </div>
-        )}
-
-        <div className="d-flex flex-wrap justify-content-center gap-2 mb-4">
-          {result?.playerMode && (
-            <span className="badge bg-primary-subtle text-primary border rounded-pill px-3 py-1.5 fs-6">
-              Matchup: <strong>{result.playerMode.replace(/_/g, ' ')}</strong>
-            </span>
-          )}
-          <span className="badge bg-secondary-subtle text-body border rounded-pill px-3 py-1.5 fs-6">
-            Style: <strong className="text-primary">{result?.gameMode ? result.gameMode.replace('_', ' ') : 'CLASSIC'}</strong>
+          <span className="fw-bold small text-white-50">
+            {stars === 3 ? 'Perfect Instincts! (3 Stars)' : stars === 2 ? 'Great Strategy! (2 Stars)' : 'Level Cleared! (1 Star)'}
           </span>
         </div>
+      )}
 
-        {/* Score & Attempt Statistics Grid */}
-        <div className="row g-3 justify-content-center mb-4">
-          <div className="col-6 col-md-3">
-            <div className="p-3 rounded-4 bg-body-tertiary border">
-              <div className="text-muted small text-uppercase">Final Score</div>
-              <div className={`h2 fw-bold mb-0 ${isWon ? 'text-success' : 'text-danger'}`}>
-                {result?.score || 0}
-              </div>
-            </div>
-          </div>
-          <div className="col-6 col-md-3">
-            <div className="p-3 rounded-4 bg-body-tertiary border">
-              <div className="text-muted small text-uppercase">Attempts Used</div>
-              <div className="h2 fw-bold text-primary mb-0">
-                {result?.attemptsUsed} / {result?.attemptsAllowed}
-              </div>
-            </div>
-          </div>
-          <div className="col-6 col-md-3">
-            <div className="p-3 rounded-4 bg-body-tertiary border">
-              <div className="text-muted small text-uppercase">Time Taken</div>
-              <div className="h2 fw-bold text-warning-emphasis mb-0 font-monospace">
-                {result?.timeTakenSeconds !== undefined ? `${result.timeTakenSeconds}s` : '--'}
-              </div>
-            </div>
-          </div>
-          <div className="col-6 col-md-3">
-            <div className="p-3 rounded-4 bg-body-tertiary border">
-              <div className="text-muted small text-uppercase">Difficulty</div>
-              <div className="h2 fw-bold text-info mb-0">
-                {result?.difficulty || 'MEDIUM'}
-              </div>
-            </div>
+      {/* Prominent Correct Number Card */}
+      <div className="mb-4">
+        <div className="revealed-number-box">
+          <span className="text-white-50 small d-block font-monospace text-uppercase fw-semibold mb-1">
+            {isWon ? 'The Correct Number Was' : 'The Secret Number Was'}
+          </span>
+          <div
+            className="display-3 fw-black font-monospace"
+            style={{
+              color: isWon ? '#34d399' : '#f87171',
+              filter: isWon ? 'drop-shadow(0 0 12px rgba(52, 211, 153, 0.6))' : 'drop-shadow(0 0 12px rgba(248, 113, 113, 0.6))',
+            }}
+          >
+            {secretNumber}
           </div>
         </div>
+      </div>
 
-        {/* XP Progression Bar Card */}
-        {xpResult && (
-          <div className="card p-3 rounded-4 border bg-body-tertiary mb-4 text-start">
-            <div className="d-flex justify-content-between align-items-center mb-2">
-              <div className="d-flex align-items-center gap-2">
-                <span className="badge bg-primary rounded-pill px-3 py-1 font-monospace">
-                  Level {xpResult.newProg.level}
-                </span>
-                <span className="fw-bold text-body">{xpResult.newProg.title}</span>
-              </div>
-              <span className="badge bg-success text-white rounded-pill px-3 py-1 fw-bold font-monospace">
-                +{xpResult.earnedXp} XP EARNED!
-              </span>
-            </div>
-
-            <div className="progress mb-2" style={{ height: '8px' }}>
-              <div
-                className="progress-bar bg-primary"
-                style={{ width: `${xpResult.newProg.progressPercent}%` }}
-              ></div>
-            </div>
-
-            <div className="d-flex justify-content-between small text-muted font-monospace">
-              <span>{xpResult.newProg.currentLevelXp} / {xpResult.newProg.nextLevelXp} XP</span>
-              <span>{100 - xpResult.newProg.progressPercent}% to Level {xpResult.newProg.level + 1}</span>
-            </div>
+      {/* Attempts Used & Elapsed Time Info Cards */}
+      <div className="row g-2.5 mb-4 justify-content-center">
+        <div className="col-6">
+          <div className="p-3 rounded-4" style={{ background: 'rgba(0, 0, 0, 0.35)' }}>
+            <span className="text-white-50 small d-block">Attempts Used</span>
+            <strong className="fs-4 font-monospace text-white">
+              {attemptsUsed} / {attemptsAllowed}
+            </strong>
           </div>
+        </div>
+        <div className="col-6">
+          <div className="p-3 rounded-4" style={{ background: 'rgba(0, 0, 0, 0.35)' }}>
+            <span className="text-white-50 small d-block">Completion Time</span>
+            <strong className="fs-4 font-monospace text-info">
+              {timeTaken}s
+            </strong>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="d-flex flex-column gap-2.5 mt-2">
+        {isWon && hasNextLevel ? (
+          <button
+            onClick={handleNext}
+            className="btn btn-collage-play btn-lg py-3.5 fs-3 w-100 shadow-lg d-inline-flex align-items-center justify-content-center gap-2"
+          >
+            <span>NEXT LEVEL</span>
+            <i className="bi bi-arrow-right-circle-fill fs-4"></i>
+          </button>
+        ) : !isWon ? (
+          <button
+            onClick={handleRetry}
+            className="btn btn-danger btn-lg py-3.5 fs-3 rounded-pill fw-black shadow-lg d-inline-flex align-items-center justify-content-center gap-2"
+            style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)', border: 'none' }}
+          >
+            <i className="bi bi-arrow-repeat fs-4"></i>
+            <span>TRY AGAIN</span>
+          </button>
+        ) : (
+          <button
+            onClick={handleRetry}
+            className="btn btn-collage-play btn-lg py-3.5 fs-3 w-100 shadow-lg"
+          >
+            PLAY AGAIN
+          </button>
         )}
 
-        {/* Wordle-Style Brag Card Share Section */}
-        <div className="card p-4 rounded-4 border-2 border-primary-subtle bg-primary-subtle mb-4 shadow-sm">
-          <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
-            <div className="text-start">
-              <h5 className="fw-bold mb-1 text-primary d-flex align-items-center gap-2">
-                <i className="bi bi-share-fill"></i>
-                <span>Share Victory Card & Brag to Friends!</span>
-              </h5>
-              <p className="small text-muted mb-0">
-                Copy your clean, spoiler-free deduction emoji grid to WhatsApp, Discord, or Instagram!
-              </p>
-            </div>
-
-            <div className="d-flex align-items-center gap-2">
-              <button
-                type="button"
-                onClick={handleCopyShare}
-                className="btn btn-primary rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center gap-2"
-              >
-                <i className={`bi ${copied ? 'bi-check2' : 'bi-clipboard-check'}`}></i>
-                <span>{copied ? 'Copied to Clipboard! 🎉' : 'Copy Brag Card'}</span>
-              </button>
-
-              {typeof navigator !== 'undefined' && navigator.share && (
-                <button
-                  type="button"
-                  onClick={handleNativeShare}
-                  className="btn btn-outline-primary rounded-pill px-3"
-                  title="Share natively"
-                >
-                  <i className="bi bi-box-arrow-up"></i>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Action Controls */}
-        <div className="d-flex flex-wrap justify-content-center gap-3 mt-4">
+        {isWon && hasNextLevel && (
           <button
-            onClick={() => {
-              sounds.playClick();
-              if (onPlayAgain) onPlayAgain();
-            }}
-            className="btn btn-primary btn-lg px-4 rounded-pill shadow-sm"
+            onClick={handleRetry}
+            className="btn btn-outline-light rounded-pill py-2.5 fw-semibold small"
           >
-            <i className="bi bi-arrow-repeat me-2"></i> Play Again
+            <i className="bi bi-arrow-repeat me-1.5"></i> Replay This Level
           </button>
-          <Link
-            to="/leaderboard"
-            className="btn btn-outline-warning btn-lg px-4 rounded-pill text-dark"
-            onClick={() => sounds.playClick()}
-          >
-            <i className="bi bi-trophy me-2"></i> Leaderboard
-          </Link>
-          <Link
-            to="/history"
-            className="btn btn-outline-secondary btn-lg px-4 rounded-pill"
-            onClick={() => sounds.playClick()}
-          >
-            <i className="bi bi-clock-history me-2"></i> View History
-          </Link>
-        </div>
+        )}
+
+        <button
+          onClick={handleGoHome}
+          className="btn btn-outline-secondary rounded-pill py-2.5 text-white-50 small fw-semibold"
+          style={{ borderColor: 'rgba(255, 255, 255, 0.2)' }}
+        >
+          <i className="bi bi-house-door me-1.5"></i> Back to Home
+        </button>
       </div>
     </div>
   );

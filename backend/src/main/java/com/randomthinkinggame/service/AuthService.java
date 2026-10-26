@@ -40,9 +40,7 @@ public class AuthService {
         }
 
         String role = "USER";
-        String lowerUsername = request.getUsername().toLowerCase();
-        if (lowerUsername.contains("admin") || 
-            request.getEmail().equalsIgnoreCase("admin@randomthinkinggame.com") ||
+        if (request.getEmail().equalsIgnoreCase("admin@randomthinkinggame.com") ||
             request.getEmail().equalsIgnoreCase("kirthikprasath@gmail.com")) {
             role = "ADMIN";
         }

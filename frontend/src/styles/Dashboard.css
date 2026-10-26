@@ -1,107 +1,245 @@
-/* Dashboard Styles */
+/* ==========================================================================
+   DASHBOARD PAGE — PLAYER PROGRESS & PERFORMANCE
+   Theme: Modern gaming purple & navy gradient with glowing accents
+   ========================================================================== */
 
-.dashboard-page {
-  animation: fadeIn 0.3s ease-in-out;
+.dashboard-container {
+  min-height: 100vh;
+  background: radial-gradient(circle at 50% 10%, #2d1066 0%, #150d38 48%, #090518 100%) !important;
+  color: #f8fafc;
+  padding: 24px 16px 50px;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.dashboard-wrapper {
+  max-width: 960px;
+  margin: 0 auto;
 }
 
-.welcome-card {
-  background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%) !important;
-  box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.25) !important;
+/* Hero Player Card */
+.dashboard-hero-card {
+  background: rgba(26, 17, 54, 0.88) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(168, 85, 247, 0.35) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 24px rgba(139, 92, 246, 0.15) !important;
+  padding: 24px 28px;
+  margin-bottom: 22px;
 }
 
-/* Stat Cards */
-.stat-card {
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+.dashboard-section-card {
+  background: rgba(26, 17, 54, 0.82) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(168, 85, 247, 0.25) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35) !important;
+  padding: 20px 24px;
+  margin-bottom: 22px;
 }
 
-.stat-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.08) !important;
-}
-
-.stat-icon {
-  width: 44px;
-  height: 44px;
-  display: flex;
+/* Glowing Continue Playing Button */
+.btn-dashboard-continue {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #f97316 100%) !important;
+  color: #1a0b2e !important;
+  font-weight: 900 !important;
+  font-size: 1.12rem !important;
+  letter-spacing: 0.04em;
+  border: none !important;
+  border-radius: 999px !important;
+  padding: 12px 28px !important;
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.45), inset 0 1px 2px rgba(255, 255, 255, 0.4) !important;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
-  transition: transform 0.2s ease;
+  gap: 8px;
+  text-decoration: none;
+  cursor: pointer;
 }
 
-.stat-card:hover .stat-icon {
-  transform: scale(1.08);
+.btn-dashboard-continue:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 32px rgba(249, 115, 22, 0.6) !important;
+  color: #120524 !important;
 }
 
-/* Selection Cards Glow */
-.selected-mode-glow {
-  border-color: #2563eb !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25), 0 12px 24px -4px rgba(37, 99, 235, 0.15) !important;
+.btn-dashboard-continue:active {
+  transform: translateY(1px);
 }
 
-.selected-glow {
-  border-color: #2563eb !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25), 0 12px 24px -4px rgba(37, 99, 235, 0.15) !important;
+/* Visual Progress Bar */
+.progress-track {
+  background: rgba(255, 255, 255, 0.08);
+  height: 14px;
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-/* Hover effects */
-.hover-scale {
-  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease;
+.progress-fill {
+  background: linear-gradient(90deg, #10b981 0%, #06b6d4 50%, #8b5cf6 100%);
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 14px rgba(6, 182, 212, 0.65);
 }
 
-.hover-scale:hover {
+/* Level Grid & Level Chips */
+.levels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+  gap: 12px;
+}
+
+.level-chip {
+  border-radius: 14px;
+  padding: 12px 8px;
+  text-align: center;
+  transition: all 0.2s ease;
+  position: relative;
+  user-select: none;
+}
+
+.level-chip-completed {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1.5px solid rgba(16, 185, 129, 0.4);
+  cursor: pointer;
+}
+
+.level-chip-completed:hover {
+  background: rgba(16, 185, 129, 0.16);
+  border-color: #10b981;
   transform: translateY(-2px);
 }
 
-.hover-scale:active {
-  transform: translateY(0);
+.level-chip-current {
+  background: rgba(56, 189, 248, 0.15);
+  border: 2px solid #38bdf8;
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.35);
+  cursor: pointer;
 }
 
-/* Custom Scrollbars */
-.achievements-scroll::-webkit-scrollbar {
-  width: 5px;
+.level-chip-current:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 0 24px rgba(56, 189, 248, 0.5);
 }
 
-.achievements-scroll::-webkit-scrollbar-track {
-  background: transparent;
+.level-chip-locked {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
-.achievements-scroll::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
-  border-radius: 999px;
+/* Performance Stats Grid */
+.perf-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
 }
 
-[data-bs-theme='dark'] .achievements-scroll::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+.perf-stat-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  border-radius: 16px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all 0.2s ease;
 }
 
-/* Text smaller helper */
-.smaller {
+.perf-stat-card:hover {
+  border-color: rgba(168, 85, 247, 0.45);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.perf-stat-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+}
+
+.perf-stat-val {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #ffffff;
+  font-family: monospace;
+  line-height: 1.2;
+}
+
+.perf-stat-sub {
   font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
 }
 
-/* Shadow helper */
-.shadow-xs {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+/* Recent Games Table */
+.recent-games-table-wrapper {
+  overflow-x: auto;
 }
 
-/* Dark mode overrides for borders */
-[data-bs-theme='dark'] .stat-card {
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+.recent-games-table {
+  width: 100%;
+  margin-bottom: 0;
+  color: #f1f5f9;
+  font-size: 0.88rem;
+  border-collapse: separate;
+  border-spacing: 0 6px;
 }
 
-[data-bs-theme='dark'] .welcome-card {
-  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%) !important;
+.recent-games-table thead th {
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid rgba(168, 85, 247, 0.2);
+  padding: 8px 12px;
+}
+
+.recent-games-table tbody tr {
+  background: rgba(255, 255, 255, 0.03);
+  transition: background 0.15s ease;
+}
+
+.recent-games-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.recent-games-table td {
+  padding: 10px 12px;
+  border: none;
+  vertical-align: middle;
+}
+
+.recent-games-table td:first-child {
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+}
+
+.recent-games-table td:last-child {
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+@media (max-width: 576px) {
+  .dashboard-hero-card {
+    padding: 18px 16px;
+  }
+  .dashboard-section-card {
+    padding: 16px;
+  }
+  .levels-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .perf-stat-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
 }

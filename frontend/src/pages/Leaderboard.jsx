@@ -49,7 +49,10 @@ const Leaderboard = () => {
           🏆 Top Random Thinking Titans
         </span>
         <h2 className="display-6 fw-bold mb-2">Global Leaderboard</h2>
-        <p className="text-muted">Discover the top ranking players and their highest scores</p>
+        <p className="text-muted mb-1">Discover the top ranking players and their highest scores</p>
+        <div className="small text-muted mb-2">
+          <i className="bi bi-shield-check text-success me-1"></i> Verified deduction scores • Local demo scores labeled accordingly
+        </div>
       </div>
 
       <ErrorMessage message={error} onRetry={() => fetchLeaderboard(difficultyFilter)} />

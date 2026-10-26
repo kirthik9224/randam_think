@@ -3,6 +3,8 @@
  * Simulates complete Spring Boot backend mechanics when playing offline
  */
 
+import { getDifficultyConfig } from './gameConfig';
+
 const STORAGE_ACTIVE_GAME = 'rtg_offline_active_game';
 const STORAGE_HISTORY = 'rtg_offline_history';
 
@@ -14,7 +16,14 @@ const loadActiveGame = () => {
   try {
     const raw = localStorage.getItem(STORAGE_ACTIVE_GAME);
     if (raw) {
-      activeGame = JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      if (parsed) {
+        const cfg = getDifficultyConfig(parsed.difficulty);
+        parsed.minNumber = parsed.minNumber ?? cfg.min;
+        parsed.maxNumber = parsed.maxNumber ?? cfg.max;
+        parsed.attemptsAllowed = parsed.attemptsAllowed ?? cfg.attempts;
+        activeGame = parsed;
+      }
     }
   } catch (e) {}
   return activeGame;
@@ -141,30 +150,12 @@ const calculateOfflineScore = (game) => {
   return Math.max(minimumScore, finalScore);
 };
 
-export const startOfflineGame = (playerId = 999999, difficulty = 'MEDIUM', gameMode = 'CLASSIC', playerMode = 'SOLO') => {
-  const minNumber = 1;
-  let maxNumber = 100;
-  let attemptsAllowed = 7;
-
-  switch (difficulty) {
-    case 'EASY':
-      maxNumber = 50;
-      attemptsAllowed = 10;
-      break;
-    case 'HARD':
-      maxNumber = 500;
-      attemptsAllowed = 5;
-      break;
-    case 'EXPERT':
-      maxNumber = 1000;
-      attemptsAllowed = 3;
-      break;
-    case 'MEDIUM':
-    default:
-      maxNumber = 100;
-      attemptsAllowed = 7;
-      break;
-  }
+export const startOfflineGame = (playerId = 999999, difficulty = 'MEDIUM', gameMode = 'CLASSIC', playerMode = 'SOLO', customOptions = {}) => {
+  const diffConfig = getDifficultyConfig(difficulty);
+  const minNumber = customOptions.minNumber ?? diffConfig.min;
+  const maxNumber = customOptions.maxNumber ?? diffConfig.max;
+  let attemptsAllowed = customOptions.attemptsAllowed ?? diffConfig.attempts;
+  const level = customOptions.level || null;
 
   // Multiplayer attempt multiplier
   switch (playerMode) {
@@ -204,6 +195,7 @@ export const startOfflineGame = (playerId = 999999, difficulty = 'MEDIUM', gameM
     secretNumber,
     guesses: [],
     isOffline: true,
+    level,
   };
 
   saveActiveGame(game);
@@ -227,6 +219,7 @@ export const startOfflineGame = (playerId = 999999, difficulty = 'MEDIUM', gameM
     timeTakenSeconds: 0,
     guesses: [],
     isOffline: true,
+    level,
   };
 };
 
@@ -238,6 +231,28 @@ export const makeOfflineGuess = (gameId, guessNum) => {
   }
 
   const guess = parseInt(guessNum, 10);
+  if (!Array.isArray(game.guesses)) {
+    game.guesses = [];
+  }
+
+  // Safe duplicate check in offline engine
+  const alreadyGuessed = game.guesses.some((g) => g.guessNumber === guess);
+  if (alreadyGuessed) {
+    return {
+      duplicate: true,
+      result: 'DUPLICATE',
+      message: `You already guessed ${guess}! Try a different number.`,
+      attemptsUsed: game.attemptsUsed,
+      attemptsRemaining: game.attemptsRemaining,
+      score: game.score,
+      status: game.status,
+      gameId: game.gameId,
+      gameOver: false,
+      guessNumber: guess,
+      attemptNumber: game.attemptsUsed,
+      isOffline: true,
+    };
+  }
   const secret = game.secretNumber;
   const attemptsUsed = game.attemptsUsed + 1;
   game.attemptsUsed = attemptsUsed;
@@ -266,7 +281,7 @@ export const makeOfflineGuess = (gameId, guessNum) => {
 
   if (guess === secret) {
     result = 'CORRECT';
-    message = '🎉 Congratulations! You deduced the secret number offline!';
+    message = 'Correct — you win!';
     game.status = 'WON';
     game.completedAt = new Date().toISOString();
     game.score = calculateOfflineScore(game);
@@ -280,13 +295,7 @@ export const makeOfflineGuess = (gameId, guessNum) => {
       game.completedAt = new Date().toISOString();
       gameOver = true;
     } else {
-      if (game.gameMode === 'HOT_COLD') {
-        message = `Too Low! (${proximity.replace('_', ' ')})`;
-      } else if (game.gameMode === 'HARDCORE') {
-        message = `💀 DANGER: Too Low! Aim higher (${game.attemptsAllowed - attemptsUsed} shots left)`;
-      } else {
-        message = 'Try a higher number!';
-      }
+      message = 'Too Low — try a bigger number.';
     }
   } else {
     result = 'TOO_HIGH';
@@ -297,13 +306,7 @@ export const makeOfflineGuess = (gameId, guessNum) => {
       game.completedAt = new Date().toISOString();
       gameOver = true;
     } else {
-      if (game.gameMode === 'HOT_COLD') {
-        message = `Too High! (${proximity.replace('_', ' ')})`;
-      } else if (game.gameMode === 'HARDCORE') {
-        message = `💀 DANGER: Too High! Aim lower (${game.attemptsAllowed - attemptsUsed} shots left)`;
-      } else {
-        message = 'Try a lower number!';
-      }
+      message = 'Too High — try a smaller number.';
     }
   }
 
@@ -343,6 +346,7 @@ export const makeOfflineGuess = (gameId, guessNum) => {
     extraClue,
     distance,
     isOffline: true,
+    level: game.level || null,
   };
 };
 

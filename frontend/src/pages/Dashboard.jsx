@@ -1,41 +1,42 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import authService from '../services/authService';
 import leaderboardService from '../services/leaderboardService';
 import gameService from '../services/gameService';
-import DashboardStatsGrid from '../components/DashboardStatsGrid';
-import PlayerModeSelector from '../components/PlayerModeSelector';
-import RosterCustomizer from '../components/RosterCustomizer';
-import GameModeSelector from '../components/GameModeSelector';
-import DifficultySelector from '../components/DifficultySelector';
-import ScoreProgressionChart from '../components/ScoreProgressionChart';
-import PerformanceBreakdownCard from '../components/PerformanceBreakdownCard';
-import RecentActivityPanel from '../components/RecentActivityPanel';
-import AchievementsCard from '../components/AchievementsCard';
-import QuickActionsCard from '../components/QuickActionsCard';
-import LoadingSpinner from '../components/LoadingSpinner';
-import ErrorMessage from '../components/ErrorMessage';
-import DailyChallengeCard from '../components/DailyChallengeCard';
-import DailyStreakRewards from '../components/DailyStreakRewards';
-import NetworkStatusPill from '../components/NetworkStatusPill';
 import sounds from '../utils/soundEffects';
-import { getDefaultRoster, getPlayerModeTitle } from '../utils/playerModesHelper';
-import { getPlayerProgression } from '../utils/progressionHelper';
+import { getLevelProgression, getLevelConfig, LEVELS } from '../utils/levelProgression';
+import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/Dashboard.css';
+import '../styles/CollageGameTheme.css';
 
+/**
+ * Dashboard Page
+ * Purpose: Player-progress and performance page.
+ * Displays:
+ * - Current level and level progression
+ * - Number of completed levels
+ * - A visual progress bar
+ * - Completed, current, and locked levels
+ * - Best score and win rate, only if supported by actual data
+ * - Recent games, only if available
+ * - One Continue Playing button
+ */
 const Dashboard = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(() => authService.getCurrentUser());
   const [profile, setProfile] = useState(null);
   const [allGames, setAllGames] = useState([]);
-  const [selectedPlayerMode, setSelectedPlayerMode] = useState('1_VS_CPU');
-  const [roster, setRoster] = useState(() => getDefaultRoster('1_VS_CPU', currentUser?.username));
-  const [showRosterModal, setShowRosterModal] = useState(false);
-  const [selectedDifficulty, setSelectedDifficulty] = useState('MEDIUM');
-  const [selectedMode, setSelectedMode] = useState('CLASSIC');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const prog = getPlayerProgression();
+
+  const progress = getLevelProgression();
+  const currentLvlCfg = getLevelConfig(progress.unlockedLevel);
+
+  const completedLevelsCount = Math.max(
+    0,
+    Object.keys(progress.levelStars || {}).filter((lvl) => (progress.levelStars[lvl] || 0) > 0).length,
+    progress.unlockedLevel - 1
+  );
+  const progressPercent = Math.min(100, Math.round((completedLevelsCount / LEVELS.length) * 100));
 
   useEffect(() => {
     let user = authService.getCurrentUser();
@@ -43,14 +44,13 @@ const Dashboard = () => {
       user = authService.loginAsGuest('Guest Player');
       setCurrentUser(user);
     }
-    loadDashboardData(user.id);
+    loadPlayerData(user.id);
   }, []);
 
-  const loadDashboardData = async (userId) => {
-    const targetId = userId || currentUser?.id || 999999;
+  const loadPlayerData = async (userId) => {
     try {
       setLoading(true);
-      setError('');
+      const targetId = userId || currentUser?.id || 999999;
       const [profileData, historyData] = await Promise.all([
         leaderboardService.getPlayerProfile(targetId),
         gameService.getPlayerHistory(targetId),
@@ -58,277 +58,349 @@ const Dashboard = () => {
       setProfile(profileData);
       setAllGames(Array.isArray(historyData) ? historyData : []);
     } catch (err) {
-      console.warn('Dashboard data fetch issue, using offline profile:', err);
+      console.warn('Dashboard performance fetch notice:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSelectPlayerMode = (mode) => {
-    if (selectedPlayerMode !== mode) {
-      setSelectedPlayerMode(mode);
-      setRoster(getDefaultRoster(mode, currentUser?.username));
-    }
-    // Automatically show the edit options of team name and players name
-    setShowRosterModal(true);
-  };
-
-  const handleUpdatePlayerName = (id, newName) => {
-    setRoster((prev) => {
-      if (id && id.startsWith('cpu_boss')) {
-        return prev.map((p) =>
-          p.id && p.id.startsWith('cpu_boss') ? { ...p, name: newName } : p
-        );
-      }
-      return prev.map((p) => (p.id === id ? { ...p, name: newName } : p));
-    });
-  };
-
-  const handleUpdatePlayerTeam = (id, newTeam) => {
-    setRoster((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, team: newTeam } : p))
-    );
-  };
-
-  const handleUpdateTeamName = (oldTeamName, newTeamName) => {
-    setRoster((prev) =>
-      prev.map((p) => (p.team === oldTeamName ? { ...p, team: newTeamName } : p))
-    );
-  };
-
-  const handleResetRoster = () => {
-    setRoster(getDefaultRoster(selectedPlayerMode, currentUser?.username));
-  };
-
-  const handleStartGame = () => {
+  const handleStartLevel = (levelNumber = progress.unlockedLevel) => {
     sounds.playClick();
+    const lvlCfg = getLevelConfig(levelNumber);
     navigate('/game', {
       state: {
-        difficulty: selectedDifficulty,
-        mode: selectedMode,
-        playerMode: selectedPlayerMode,
-        roster,
-      },
-    });
-  };
-
-  const handlePlayDaily = () => {
-    sounds.playClick();
-    navigate('/game', {
-      state: {
-        difficulty: 'MEDIUM',
-        mode: 'DAILY',
+        level: lvlCfg.level,
+        difficulty:
+          lvlCfg.level <= 2
+            ? 'EASY'
+            : lvlCfg.level <= 5
+            ? 'MEDIUM'
+            : lvlCfg.level <= 10
+            ? 'HARD'
+            : 'EXPERT',
+        minNumber: lvlCfg.min,
+        maxNumber: lvlCfg.max,
+        attemptsAllowed: lvlCfg.attempts,
+        mode: 'CLASSIC',
         playerMode: 'SOLO',
-        isDailyChallenge: true,
-        roster: [
-          {
-            id: 'p1',
-            name: `${currentUser?.username || 'Daily Thinker'}`,
-            team: 'Solo',
-            isAi: false,
-            color: 'primary',
-            icon: 'bi-person-fill',
-          },
-        ],
       },
     });
   };
+
+  // Derive actual performance metrics
+  const totalGamesPlayed =
+    profile?.gamesPlayed ?? profile?.totalGames ?? (allGames ? allGames.length : 0);
+
+  const totalGamesWon =
+    profile?.gamesWon ??
+    profile?.wonGames ??
+    (allGames ? allGames.filter((g) => g.status === 'WON').length : 0);
+
+  const bestScore =
+    profile?.bestScore ??
+    (allGames && allGames.length > 0 ? Math.max(...allGames.map((g) => g.score || 0)) : null);
+
+  const winRate =
+    totalGamesPlayed > 0
+      ? profile?.winRate !== undefined && profile?.winRate !== null
+        ? parseFloat(profile.winRate).toFixed(1)
+        : ((totalGamesWon / totalGamesPlayed) * 100).toFixed(1)
+      : null;
+
+  const hasActualPerformanceData =
+    totalGamesPlayed > 0 && (bestScore !== null || winRate !== null);
+
+  const hasRecentGames = Array.isArray(allGames) && allGames.length > 0;
 
   if (loading) {
-    return <LoadingSpinner message="Loading your player dashboard..." fullScreen />;
+    return <LoadingSpinner message="Loading player progression & stats..." fullScreen />;
   }
 
   return (
-    <div className="dashboard-page container py-4">
-      {/* 1. Welcome Banner */}
-      <div className="card border-0 shadow-sm rounded-4 text-white mb-4 p-4 welcome-card">
-        <div className="d-flex flex-wrap justify-content-between align-items-center gap-3">
-          <div style={{ maxWidth: '620px' }}>
-            <div className="d-flex align-items-center gap-2 mb-2">
-              <span className="badge bg-white text-primary rounded-pill px-3 py-1 fw-bold font-monospace">
-                Level {prog.level}
-              </span>
-              <span className="badge bg-warning text-dark rounded-pill px-3 py-1 fw-bold">
-                <i className={`bi ${prog.icon} me-1`}></i> {prog.title}
-              </span>
+    <div className="dashboard-container">
+      <div className="dashboard-wrapper animate-fade-in">
+
+        {/* 1. Header / Hero Profile Banner with ONE Continue Playing Button */}
+        <div className="dashboard-hero-card">
+          <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+              <div className="d-flex align-items-center gap-2 mb-2">
+                <span className="badge rounded-pill px-3 py-1 fw-bold bg-primary text-white font-monospace">
+                  Lvl {progress.unlockedLevel}
+                </span>
+                <span className="badge rounded-pill px-3 py-1 fw-bold" style={{ background: 'rgba(251, 191, 36, 0.2)', color: '#fbbf24', border: '1px solid rgba(251, 191, 36, 0.4)' }}>
+                  ⭐ {progress.totalStars} Stars
+                </span>
+              </div>
+              <h2 className="fw-black text-white mb-1 tracking-tight">
+                Player Dashboard
+              </h2>
+              <p className="text-white-50 mb-0 small">
+                Player: <strong className="text-white">{currentUser?.username || 'Player'}</strong> • Unlocked Level {progress.unlockedLevel} ({currentLvlCfg.title})
+              </p>
             </div>
-            <h2 className="fw-bold mb-1">
-              Welcome back, {currentUser?.username || 'Player'}! 🎯
-            </h2>
-            <p className="text-white-50 mb-2 small">
-              Ready to test your instincts and climb the global leaderboards?
-            </p>
 
-            {/* Level XP Progress Bar */}
-            <div className="bg-dark bg-opacity-25 p-2.5 rounded-3 border border-white border-opacity-10 mt-2">
-              <div className="d-flex justify-content-between small font-monospace text-white-50 mb-1" style={{ fontSize: '0.75rem' }}>
-                <span>XP PROGRESSION: {prog.currentLevelXp} / {prog.nextLevelXp} XP</span>
-                <span>{prog.progressPercent}% TO LEVEL {prog.level + 1}</span>
-              </div>
-              <div className="progress bg-black bg-opacity-40" style={{ height: '6px' }}>
-                <div
-                  className="progress-bar bg-warning"
-                  style={{ width: `${prog.progressPercent}%` }}
-                ></div>
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={handleStartGame}
-            className="btn btn-warning btn-lg px-4 py-3 rounded-pill fw-bold shadow-sm d-flex align-items-center gap-2 hover-scale text-dark"
-          >
-            <i className="bi bi-play-circle-fill fs-5"></i>
-            PLAY NOW ({getPlayerModeTitle(selectedPlayerMode)} • {selectedDifficulty})
-          </button>
-        </div>
-      </div>
-
-      {/* Universal Daily Mystery Challenge Card & Global Streak */}
-      <DailyChallengeCard onPlayDaily={handlePlayDaily} />
-
-      {/* 7-Day Dedication Calendar & Mystery Loot Chest */}
-      <DailyStreakRewards onRewardClaimed={() => loadDashboardData()} />
-
-      <ErrorMessage message={error} onRetry={loadDashboardData} />
-
-      {/* 2. Top Primary Statistics Cards (6 Core Metrics) */}
-      <DashboardStatsGrid profile={profile} history={allGames} />
-
-      {/* 3. Interactive Game Arena: Player Matchup, Mode & Difficulty Selectors */}
-      <div className="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-body">
-        {/* Step 1: Mode of Players (Matchup Format) */}
-        <div className="mb-4">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h5 className="fw-bold mb-0 d-flex align-items-center gap-2">
-              <span className="badge bg-primary rounded-circle px-2 py-1 fs-6">1</span>
-              <span>Choose Mode of Players</span>
-            </h5>
-            <span className="small text-muted">Select Solo, 1v1, Co-op vs Computer, or Squad Battles</span>
-          </div>
-          <PlayerModeSelector
-            selectedPlayerMode={selectedPlayerMode}
-            onSelectPlayerMode={handleSelectPlayerMode}
-          />
-
-          {/* Quick Roster Summary & Trigger Bar */}
-          <div className="card border-0 bg-primary-subtle rounded-4 p-3 mt-3 shadow-sm">
-            <div className="d-flex flex-wrap justify-content-between align-items-center gap-2">
-              <div className="d-flex align-items-center gap-2">
-                <i className="bi bi-shield-check fs-4 text-primary"></i>
-                <div>
-                  <div className="fw-bold text-primary">
-                    Selected Matchup: {getPlayerModeTitle(selectedPlayerMode)}
-                  </div>
-                  <div className="small text-secondary">
-                    {roster.map((p) => `${p.name} [${p.team}]`).join(' • ')}
-                  </div>
-                </div>
-              </div>
+            {/* ONE Continue Playing Button */}
+            <div>
               <button
-                type="button"
-                className="btn btn-primary rounded-pill px-3.5 py-1.5 fw-bold shadow-sm d-flex align-items-center gap-1.5 hover-scale"
-                onClick={() => {
-                  sounds.playClick();
-                  setShowRosterModal(true);
-                }}
+                onClick={() => handleStartLevel(progress.unlockedLevel)}
+                className="btn btn-dashboard-continue text-nowrap"
+                title={`Continue Playing Level ${progress.unlockedLevel}`}
               >
-                <i className="bi bi-pencil-square"></i>
-                <span>Edit Teams & Players</span>
+                <i className="bi bi-play-fill fs-4"></i>
+                <span>CONTINUE PLAYING (LEVEL {progress.unlockedLevel})</span>
               </button>
             </div>
           </div>
         </div>
 
-        <hr className="my-4 opacity-25" />
-
-        {/* Step 2: Game Style & Rules */}
-        <div className="mb-4">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h5 className="fw-bold mb-0 d-flex align-items-center gap-2">
-              <span className="badge bg-primary rounded-circle px-2 py-1 fs-6">2</span>
-              <span>Choose Game Style & Rules</span>
-            </h5>
-            <span className="small text-muted">Select your deduction style & clues</span>
+        {/* 2. Level Progression & Visual Progress Bar Card */}
+        <div className="dashboard-section-card">
+          <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <h4 className="fw-black text-white mb-0 d-flex align-items-center gap-2">
+              <span>🏆</span>
+              <span>Level Progression</span>
+            </h4>
+            <div className="text-white-50 small font-monospace">
+              Completed: <strong className="text-success">{completedLevelsCount}</strong> of {LEVELS.length} levels ({progressPercent}%)
+            </div>
           </div>
-          <GameModeSelector
-            selectedMode={selectedMode}
-            onSelectMode={setSelectedMode}
-          />
-        </div>
 
-        <hr className="my-4 opacity-25" />
-
-        {/* Step 3: Difficulty Level */}
-        <div>
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h5 className="fw-bold mb-0 d-flex align-items-center gap-2">
-              <span className="badge bg-primary rounded-circle px-2 py-1 fs-6">3</span>
-              <span>Choose Difficulty & Multiplier</span>
-            </h5>
-            <span className="small text-muted">Higher difficulty awards higher base scores</span>
+          {/* Visual Progress Bar */}
+          <div className="mb-4">
+            <div className="progress-track" title={`${progressPercent}% Campaign Completed`}>
+              <div
+                className="progress-fill"
+                style={{ width: `${Math.max(4, progressPercent)}%` }}
+              ></div>
+            </div>
           </div>
-          <DifficultySelector
-            selectedDifficulty={selectedDifficulty}
-            onSelectDifficulty={setSelectedDifficulty}
-          />
+
+          {/* Completed, Current, and Locked Levels */}
+          <div className="mb-2">
+            <div className="d-flex justify-content-between align-items-center mb-2.5">
+              <span className="text-white-50 small fw-bold text-uppercase tracking-wider">
+                Campaign Map (12 Levels)
+              </span>
+              <span className="text-info small">
+                Target: 1 to {currentLvlCfg.max}
+              </span>
+            </div>
+
+            <div className="levels-grid">
+              {LEVELS.map((lvl) => {
+                const isCompleted =
+                  lvl.level < progress.unlockedLevel || Boolean(progress.levelStars[lvl.level]);
+                const isCurrent = lvl.level === progress.unlockedLevel;
+                const isLocked = lvl.level > progress.unlockedLevel;
+
+                let chipClass = 'level-chip-locked';
+                if (isCurrent) chipClass = 'level-chip-current';
+                else if (isCompleted) chipClass = 'level-chip-completed';
+
+                return (
+                  <div
+                    key={lvl.level}
+                    className={`level-chip ${chipClass}`}
+                    onClick={() => {
+                      if (!isLocked) handleStartLevel(lvl.level);
+                    }}
+                    title={
+                      isCompleted
+                        ? `Level ${lvl.level}: ${lvl.title} (Completed) - Click to replay`
+                        : isCurrent
+                        ? `Level ${lvl.level}: ${lvl.title} (Current Active Level) - Click to play`
+                        : `Level ${lvl.level}: Locked (Complete Level ${lvl.level - 1} first)`
+                    }
+                  >
+                    <div className="d-flex justify-content-between align-items-center mb-1">
+                      <span className="fw-bold font-monospace small" style={{ color: isCurrent ? '#38bdf8' : isCompleted ? '#10b981' : '#94a3b8' }}>
+                        Lvl {lvl.level}
+                      </span>
+                      <span>
+                        {isCompleted ? '⭐' : isCurrent ? '🔥' : '🔒'}
+                      </span>
+                    </div>
+
+                    <div className="small fw-semibold text-truncate text-white mb-1" style={{ fontSize: '0.8rem' }}>
+                      {lvl.title}
+                    </div>
+
+                    <div className="font-monospace text-white-50" style={{ fontSize: '0.74rem' }}>
+                      1–{lvl.max}
+                    </div>
+
+                    <div className="mt-1">
+                      {isCompleted && (
+                        <span className="badge bg-success-subtle text-success rounded-pill font-monospace" style={{ fontSize: '0.65rem' }}>
+                          ✓ Done
+                        </span>
+                      )}
+                      {isCurrent && (
+                        <span className="badge bg-info text-dark rounded-pill font-monospace" style={{ fontSize: '0.65rem' }}>
+                          ▶ Play
+                        </span>
+                      )}
+                      {isLocked && (
+                        <span className="badge bg-secondary-subtle text-muted rounded-pill font-monospace" style={{ fontSize: '0.65rem' }}>
+                          Locked
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
-        <div className="text-center mt-4 pt-2">
-          <button
-            onClick={handleStartGame}
-            className="btn btn-primary btn-lg px-5 py-3 rounded-pill fw-bold shadow-lg d-inline-flex align-items-center gap-2 hover-scale"
-          >
-            <i className="bi bi-play-fill fs-4"></i>
-            <span>
-              Start {getPlayerModeTitle(selectedPlayerMode)} ({selectedMode.replace('_', ' ')} • {selectedDifficulty})
-            </span>
-          </button>
+        {/* 3. Performance Metrics (Best Score & Win Rate, only if supported by actual data) */}
+        <div className="dashboard-section-card">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h4 className="fw-black text-white mb-0 d-flex align-items-center gap-2">
+              <span>📊</span>
+              <span>Performance Metrics</span>
+            </h4>
+            <Link to="/history" className="text-info small text-decoration-none fw-semibold">
+              Full Stats &rarr;
+            </Link>
+          </div>
+
+          {hasActualPerformanceData ? (
+            <div className="perf-stat-grid">
+              {/* Best Score */}
+              <div className="perf-stat-card">
+                <span className="perf-stat-label">Best Score</span>
+                <span className="perf-stat-val text-warning">
+                  {bestScore?.toLocaleString() || 0}
+                </span>
+                <span className="perf-stat-sub">Highest match points</span>
+              </div>
+
+              {/* Win Rate */}
+              <div className="perf-stat-card">
+                <span className="perf-stat-label">Win Rate</span>
+                <span className="perf-stat-val text-success">
+                  {winRate}%
+                </span>
+                <span className="perf-stat-sub">
+                  {totalGamesWon} wins in {totalGamesPlayed} matches
+                </span>
+              </div>
+
+              {/* Matches Played */}
+              <div className="perf-stat-card">
+                <span className="perf-stat-label">Games Played</span>
+                <span className="perf-stat-val text-info">
+                  {totalGamesPlayed}
+                </span>
+                <span className="perf-stat-sub">Total rounds recorded</span>
+              </div>
+
+              {/* Current Streak */}
+              <div className="perf-stat-card">
+                <span className="perf-stat-label">Current Streak</span>
+                <span className="perf-stat-val text-purple" style={{ color: '#c084fc' }}>
+                  {profile?.currentStreak || 0}
+                </span>
+                <span className="perf-stat-sub">Consecutive wins</span>
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 rounded-3 text-center" style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px dashed rgba(168, 85, 247, 0.25)' }}>
+              <span className="fs-3 d-block mb-2">🎯</span>
+              <p className="text-white-50 mb-2 small">
+                No match records found yet. Complete your first game to track your Best Score and Win Rate!
+              </p>
+              <button
+                onClick={() => handleStartLevel(progress.unlockedLevel)}
+                className="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold"
+              >
+                Start First Match
+              </button>
+            </div>
+          )}
         </div>
+
+        {/* 4. Recent Games (Only if available) */}
+        <div className="dashboard-section-card">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h4 className="fw-black text-white mb-0 d-flex align-items-center gap-2">
+              <span>🕒</span>
+              <span>Recent Games</span>
+            </h4>
+            {hasRecentGames && (
+              <Link to="/history" className="text-info small text-decoration-none fw-semibold">
+                View All &rarr;
+              </Link>
+            )}
+          </div>
+
+          {hasRecentGames ? (
+            <div className="recent-games-table-wrapper">
+              <table className="recent-games-table">
+                <thead>
+                  <tr>
+                    <th>Outcome</th>
+                    <th>Mode & Difficulty</th>
+                    <th>Range</th>
+                    <th>Attempts</th>
+                    <th>Score</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allGames.slice(0, 5).map((game, idx) => {
+                    const isWin = game.status === 'WON';
+                    const playedDate = game.completedAt || game.startedAt || game.createdAt;
+                    const dateFormatted = playedDate
+                      ? new Date(playedDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                      : 'Recently';
+
+                    return (
+                      <tr key={game.id || game.gameId || idx}>
+                        <td>
+                          <span
+                            className={`badge rounded-pill font-monospace fw-bold ${
+                              isWin ? 'bg-success text-white' : 'bg-danger text-white'
+                            }`}
+                            style={{ fontSize: '0.72rem' }}
+                          >
+                            {isWin ? 'WON ✓' : 'LOST ✕'}
+                          </span>
+                        </td>
+                        <td className="fw-semibold text-white">
+                          {game.mode || 'CLASSIC'} • {game.difficulty || 'MEDIUM'}
+                        </td>
+                        <td className="font-monospace text-white-50">
+                          {game.minNumber ?? 1}–{game.maxNumber ?? 100}
+                        </td>
+                        <td className="font-monospace">
+                          {game.attemptsUsed || 0} / {game.attemptsAllowed || 7}
+                        </td>
+                        <td className="font-monospace fw-bold text-warning">
+                          +{game.score || 0}
+                        </td>
+                        <td className="text-white-50 small">
+                          {dateFormatted}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="p-4 rounded-3 text-center" style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px dashed rgba(168, 85, 247, 0.25)' }}>
+              <span className="fs-3 d-block mb-2">📜</span>
+              <p className="text-white-50 mb-0 small">
+                No recent games recorded yet. Your completed matches will appear here!
+              </p>
+            </div>
+          )}
+        </div>
+
       </div>
-
-      {/* 4. Secondary Statistics: Score Progression Chart & Breakdown */}
-      <div className="row g-4 mb-4">
-        <div className="col-lg-6">
-          <ScoreProgressionChart games={allGames} />
-        </div>
-        <div className="col-lg-6">
-          <PerformanceBreakdownCard history={allGames} />
-        </div>
-      </div>
-
-      {/* 5. Recent Activity & Quick Actions */}
-      <div className="row g-4 mb-4">
-        <div className="col-lg-8">
-          <RecentActivityPanel
-            games={allGames}
-            loading={loading}
-            error={error}
-          />
-        </div>
-
-        <div className="col-lg-4">
-          <QuickActionsCard onPlayGame={handleStartGame} />
-        </div>
-      </div>
-
-      {/* 6. Trophy Cabinet & Achievements Showcase */}
-      <div className="mb-4">
-        <AchievementsCard profile={profile} history={allGames} />
-      </div>
-
-      {/* Modal for Automatic & Manual Player & Team Editing */}
-      {showRosterModal && (
-        <RosterCustomizer
-          roster={roster}
-          onUpdatePlayerName={handleUpdatePlayerName}
-          onUpdatePlayerTeam={handleUpdatePlayerTeam}
-          onUpdateTeamName={handleUpdateTeamName}
-          onResetRoster={handleResetRoster}
-          playerMode={selectedPlayerMode}
-          isModal={true}
-          onClose={() => setShowRosterModal(false)}
-        />
-      )}
     </div>
   );
 };

@@ -10,6 +10,25 @@ const api = axios.create({
   timeout: 10000,
 });
 
+// Request interceptor to attach authentication & role headers
+api.interceptors.request.use((config) => {
+  try {
+    const rawUser = localStorage.getItem('rtg_user');
+    if (rawUser) {
+      const user = JSON.parse(rawUser);
+      if (user.id) {
+        config.headers['X-Player-Id'] = user.id;
+      }
+      if (user.role) {
+        config.headers['X-Player-Role'] = user.role;
+      }
+    }
+  } catch (e) {
+    // Ignore parse errors
+  }
+  return config;
+});
+
 // Response interceptor to format errors nicely
 api.interceptors.response.use(
   (response) => response,

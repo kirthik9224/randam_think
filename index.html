@@ -1,91 +1,762 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-   <meta charset="UTF-8">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title>🎯 Random Thinking</title>
-   <link rel="stylesheet" href="index.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0b0f19">
+    <meta name="description" content="Guess the Number - A modern, sleek, and addictive number guessing game. Think. Guess. Win!">
+    <title>🎯 Guess the Number — Think. Guess. Win!</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
 </head>
-<body>
+<body class="theme-neon-cyber">
+    <!-- Ambient Background Glow Elements -->
+    <div class="ambient-glow glow-top-left" aria-hidden="true"></div>
+    <div class="ambient-glow glow-bottom-right" aria-hidden="true"></div>
+    <div class="ambient-glow glow-center" aria-hidden="true"></div>
 
-    <div class="game">
+    <!-- Canvas for Confetti particle effects -->
+    <canvas id="confettiCanvas" class="confetti-canvas"></canvas>
 
-        <h1>
-            <span class="dice-icon">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <rect x="3" y="3" width="18" height="18" rx="4"></rect>
-                    <circle cx="8" cy="8" r="1.3"></circle>
-                    <circle cx="16" cy="8" r="1.3"></circle>
-                    <circle cx="8" cy="16" r="1.3"></circle>
-                    <circle cx="16" cy="16" r="1.3"></circle>
-                    <circle cx="12" cy="12" r="1.3"></circle>
-                </svg>
-            </span>
-
-            <span>Random Thinking</span>
-        </h1>
-
-
-        <input
-            id="guessnumber"
-            type="number"
-            placeholder="Enter 1 - 20"
-        >
-
-        <button onclick="check()">Check</button>
-
-
-        <p id="result">Make your guess!</p>
- <div class="game-stats">
-    <span id="level">Level: 1</span>
-    <span id="bestLevel">Best: 1</span>
-    <span id="completed">Completed: 0</span>
-</div>
-<div class="score-section">
-    <p id="score">Score: 5</p>
-
-    <div class="progress-container">
-        <div id="progress-bar"></div>
-    </div>
-
-    <p id="progress-text">Progress: 1 / 500</p>
-</div>
-     <p id="streak">🔥 Streak: 0</p>
-     <p id="bestStreak">🏆 Best Streak: 0</p>
-       
+    <!-- Main Application Container -->
+    <div class="app-container">
         
+        <!-- Global Header & Navbar -->
+        <header class="app-header">
+            <div class="brand" id="brandLogo" role="button" tabindex="0" title="Return to Home">
+                <span class="brand-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="4" />
+                        <circle cx="8" cy="8" r="1.5" fill="currentColor" />
+                        <circle cx="16" cy="8" r="1.5" fill="currentColor" />
+                        <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+                        <circle cx="8" cy="16" r="1.5" fill="currentColor" />
+                        <circle cx="16" cy="16" r="1.5" fill="currentColor" />
+                    </svg>
+                </span>
+                <div class="brand-text">
+                    <span class="brand-title">Guess the Number</span>
+                    <span class="brand-subtitle">Think. Guess. Win!</span>
+                </div>
+            </div>
 
-        <p id="attempts">
-            Attempts: 0
-        </p>
+            <nav class="nav-actions">
+                <button id="navStatsBtn" class="nav-btn" title="Statistics" aria-label="Statistics">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="20" x2="18" y2="10" />
+                        <line x1="12" y1="20" x2="12" y2="4" />
+                        <line x1="6" y1="20" x2="6" y2="14" />
+                    </svg>
+                    <span class="nav-btn-label">Stats</span>
+                </button>
+                <button id="navLeaderboardBtn" class="nav-btn" title="Leaderboard" aria-label="Leaderboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                        <path d="M4 22h16" />
+                        <path d="M10 14.66V17c0 .55-.45 1-1 1H7" />
+                        <path d="M14 14.66V17c0 .55.45 1 1 1h2" />
+                        <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+                    </svg>
+                    <span class="nav-btn-label">Leaders</span>
+                </button>
+                <button id="navHowToPlayBtn" class="nav-btn" title="How to Play" aria-label="How to Play">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" stroke-width="3" />
+                    </svg>
+                    <span class="nav-btn-label">Help</span>
+                </button>
+                <button id="navSettingsBtn" class="nav-btn" title="Settings" aria-label="Settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                </button>
+                <button id="soundToggleBtn" class="nav-btn icon-only" title="Toggle Sound (Mute/Unmute)" aria-label="Toggle Sound">
+                    <span id="soundIconOn" class="sound-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+                        </svg>
+                    </span>
+                    <span id="soundIconOff" class="sound-icon hidden">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="1" y1="1" x2="23" y2="23" />
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                            <path d="M23 9l-6 6M17 9l6 6" />
+                        </svg>
+                    </span>
+                </button>
+            </nav>
+        </header>
 
-        <p id="hint">
-            💡 Hint will appear here
-        </p>
+        <!-- Dynamic View Container -->
+        <main class="main-content">
 
-        <p id="chances">
-            Chances Left: 5
-        </p>
+            <!-- 1. HOME DASHBOARD VIEW -->
+            <section id="homeView" class="view-section active">
+                <div class="home-hero">
+                    <div class="hero-badge">
+                        <span class="pulse-dot"></span>
+                        <span>Interactive Brain Arena</span>
+                    </div>
 
+                    <h1 class="hero-headline">
+                        Guess the <span class="text-neon-cyan">Number</span>
+                    </h1>
 
-        <div id="levelMessage">
-            🎉 Level Complete!
+                    <p class="hero-tagline">
+                        "Think. Guess. Win!"
+                    </p>
+
+                    <!-- Interactive Floating Numbers Graphic -->
+                    <div class="interactive-graphic-wrapper">
+                        <div class="floating-orb orb-1">?</div>
+                        <div class="floating-orb orb-2">42</div>
+                        <div class="floating-orb orb-3">7</div>
+                        <div class="floating-orb orb-4">99</div>
+                        <div class="hero-center-box">
+                            <div class="hero-target-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <circle cx="12" cy="12" r="6" />
+                                    <circle cx="12" cy="12" r="2" />
+                                </svg>
+                            </div>
+                            <span class="hero-box-label">SECRET NUMBER LOCKED</span>
+                        </div>
+                    </div>
+
+                    <!-- Primary Hero Action -->
+                    <div class="hero-cta-wrapper">
+                        <button id="heroPlayNowBtn" class="btn btn-primary btn-xl">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <polygon points="5 3 19 12 5 21 5 3" />
+                            </svg>
+                            <span>PLAY NOW</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Difficulty Selection Section -->
+                <div id="difficultySection" class="difficulty-section">
+                    <div class="section-heading">
+                        <h2 class="section-title">Select Difficulty Level</h2>
+                        <p class="section-subtitle">Pick your challenge and test your deductive reasoning</p>
+                    </div>
+
+                    <div class="difficulty-grid">
+                        <!-- Easy Card -->
+                        <div class="difficulty-card card-easy" data-difficulty="EASY" tabindex="0">
+                            <div class="diff-header">
+                                <div class="diff-tag">
+                                    <span class="diff-icon">🌱</span>
+                                    <span class="diff-name">EASY</span>
+                                </div>
+                                <span class="diff-badge">10 Attempts</span>
+                            </div>
+                            <div class="diff-range-box">
+                                <span class="range-label">Range</span>
+                                <span class="range-numbers">1 – 50</span>
+                            </div>
+                            <p class="diff-desc">Relaxed warmup mode with plenty of attempts. Perfect for beginners!</p>
+                            <button class="btn btn-diff btn-diff-easy" data-difficulty="EASY">
+                                Play Easy
+                            </button>
+                        </div>
+
+                        <!-- Medium Card (Featured) -->
+                        <div class="difficulty-card card-medium featured" data-difficulty="MEDIUM" tabindex="0">
+                            <div class="featured-badge">MOST POPULAR</div>
+                            <div class="diff-header">
+                                <div class="diff-tag">
+                                    <span class="diff-icon">⚡</span>
+                                    <span class="diff-name">MEDIUM</span>
+                                </div>
+                                <span class="diff-badge">8 Attempts</span>
+                            </div>
+                            <div class="diff-range-box">
+                                <span class="range-label">Range</span>
+                                <span class="range-numbers">1 – 100</span>
+                            </div>
+                            <p class="diff-desc">The standard classic challenge. Strategic guessing is the key to victory.</p>
+                            <button class="btn btn-diff btn-diff-medium" data-difficulty="MEDIUM">
+                                Play Medium
+                            </button>
+                        </div>
+
+                        <!-- Hard Card -->
+                        <div class="difficulty-card card-hard" data-difficulty="HARD" tabindex="0">
+                            <div class="diff-header">
+                                <div class="diff-tag">
+                                    <span class="diff-icon">🔥</span>
+                                    <span class="diff-name">HARD</span>
+                                </div>
+                                <span class="diff-badge">10 Attempts</span>
+                            </div>
+                            <div class="diff-range-box">
+                                <span class="range-label">Range</span>
+                                <span class="range-numbers">1 – 500</span>
+                            </div>
+                            <p class="diff-desc">Wider range requiring calculated binary halving moves. Sharpen your mind!</p>
+                            <button class="btn btn-diff btn-diff-hard" data-difficulty="HARD">
+                                Play Hard
+                            </button>
+                        </div>
+
+                        <!-- Expert Card -->
+                        <div class="difficulty-card card-expert" data-difficulty="EXPERT" tabindex="0">
+                            <div class="diff-header">
+                                <div class="diff-tag">
+                                    <span class="diff-icon">👑</span>
+                                    <span class="diff-name">EXPERT</span>
+                                </div>
+                                <span class="diff-badge">10 Attempts</span>
+                            </div>
+                            <div class="diff-range-box">
+                                <span class="range-label">Range</span>
+                                <span class="range-numbers">1 – 1000</span>
+                            </div>
+                            <p class="diff-desc">Massive 1,000-number span. Only true deduction masters survive here.</p>
+                            <button class="btn btn-diff btn-diff-expert" data-difficulty="EXPERT">
+                                Play Expert
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Home Quick Stats Banner -->
+                <div class="quick-stats-strip">
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">GAMES PLAYED</span>
+                        <span class="stat-pill-value" id="quickStatPlayed">0</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">VICTORIES</span>
+                        <span class="stat-pill-value" id="quickStatWon">0</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">WIN RATE</span>
+                        <span class="stat-pill-value text-neon-green" id="quickStatRate">0%</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="stat-pill-label">BEST STREAK</span>
+                        <span class="stat-pill-value text-neon-yellow" id="quickStatStreak">0</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. GAMEPLAY SCREEN VIEW -->
+            <section id="gameplayView" class="view-section">
+                <!-- Game Top Navigation & Control Bar -->
+                <div class="gameplay-topbar">
+                    <button id="gameBackHomeBtn" class="btn btn-ghost" title="Back to Home">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 12H5M12 19l-7-7 7-7" />
+                        </svg>
+                        <span>Home</span>
+                    </button>
+
+                    <div class="gameplay-level-pill" id="gameDifficultyBadge">
+                        <span id="gameDifficultyIcon">⚡</span>
+                        <span id="gameDifficultyText">MEDIUM MODE</span>
+                    </div>
+
+                    <button id="gameRestartBtn" class="btn btn-ghost" title="Restart Game">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                        </svg>
+                        <span>Restart</span>
+                    </button>
+                </div>
+
+                <!-- Main Gameplay Arena Card -->
+                <div class="game-arena-card">
+
+                    <!-- Live Status HUD: Range, Timer, Attempts -->
+                    <div class="arena-hud">
+                        <div class="hud-item hud-range">
+                            <span class="hud-label">TARGET RANGE</span>
+                            <span class="hud-value" id="gameRangeDisplay">1 – 100</span>
+                        </div>
+
+                        <div class="hud-item hud-timer">
+                            <span class="hud-label">TIME ELAPSED</span>
+                            <span class="hud-value font-mono" id="gameTimerDisplay">00:00</span>
+                        </div>
+
+                        <div class="hud-item hud-attempts">
+                            <span class="hud-label">ATTEMPTS LEFT</span>
+                            <span class="hud-value font-mono text-neon-cyan" id="gameAttemptsDisplay">8 / 8</span>
+                        </div>
+                    </div>
+
+                    <!-- Visual Progress & Range Narrowing Bar -->
+                    <div class="progress-section">
+                        <div class="progress-info-row">
+                            <span class="progress-info-text" id="narrowRangeInfo">Possible window: 1 – 100</span>
+                            <span class="progress-info-text" id="attemptsRemainingText">8 attempts remaining</span>
+                        </div>
+                        <div class="custom-progress-track">
+                            <div class="custom-progress-fill" id="attemptsProgressBar" style="width: 100%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Feedback Message Banner -->
+                    <div class="feedback-container">
+                        <div class="feedback-banner state-neutral" id="feedbackBanner">
+                            <div class="feedback-icon" id="feedbackIcon">🎯</div>
+                            <div class="feedback-content">
+                                <h3 class="feedback-title" id="feedbackTitle">Make your guess!</h3>
+                                <p class="feedback-detail" id="feedbackDetail">Enter a number within the target range to begin.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Guess Submission Form -->
+                    <form id="guessForm" class="guess-form" onsubmit="return false;" novalidate>
+                        <div class="input-wrapper">
+                            <label for="guessInput" class="visually-hidden">Enter your guess</label>
+                            <input
+                                type="number"
+                                id="guessInput"
+                                class="guess-input"
+                                placeholder="Enter number..."
+                                inputmode="numeric"
+                                autocomplete="off"
+                                autofocus
+                            />
+                            <button type="submit" id="submitGuessBtn" class="btn btn-submit-guess">
+                                <span>Guess</span>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <line x1="5" y1="12" x2="19" y2="12" />
+                                    <polyline points="12 5 19 12 12 19" />
+                                </svg>
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Inline Notification Alert (Empty, Out-of-Range, Duplicate) -->
+                    <div id="inputAlert" class="input-alert hidden" role="alert">
+                        <span class="alert-icon">⚠️</span>
+                        <span id="inputAlertText" class="alert-text">Please enter a valid number!</span>
+                    </div>
+
+                    <!-- Guess History Section -->
+                    <div class="guess-history-card">
+                        <div class="history-card-header">
+                            <h4 class="history-title">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <polyline points="12 6 12 12 16 14" />
+                                </svg>
+                                Guess History (<span id="historyCount">0</span>)
+                            </h4>
+                            <span class="history-tip">Most recent guesses first</span>
+                        </div>
+
+                        <div class="history-list-wrapper">
+                            <ul id="guessHistoryList" class="guess-history-list">
+                                <li class="history-empty-item">
+                                    <span>No guesses made yet. Enter a number above!</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+
+        <!-- Global Modals -->
+
+        <!-- 3. WINNING MODAL -->
+        <div id="winModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="winTitle">
+            <div class="modal-card win-card">
+                <div class="modal-glow-win"></div>
+                <div class="trophy-badge-wrapper">
+                    <div class="animated-trophy">🏆</div>
+                </div>
+                <h2 id="winTitle" class="modal-headline text-neon-green">CONGRATULATIONS!</h2>
+                <p class="modal-subtext">You cracked the code and deduced the secret number!</p>
+
+                <div class="revealed-number-box">
+                    <span class="revealed-number-label">THE SECRET NUMBER WAS</span>
+                    <span class="revealed-number-value" id="winSecretNumber">42</span>
+                </div>
+
+                <div class="modal-stats-grid">
+                    <div class="modal-stat-box">
+                        <span class="modal-stat-label">ATTEMPTS USED</span>
+                        <span class="modal-stat-value" id="winAttemptsUsed">4</span>
+                    </div>
+                    <div class="modal-stat-box">
+                        <span class="modal-stat-label">TIME TAKEN</span>
+                        <span class="modal-stat-value font-mono" id="winTimeTaken">00:28</span>
+                    </div>
+                    <div class="modal-stat-box">
+                        <span class="modal-stat-label">DIFFICULTY</span>
+                        <span class="modal-stat-value" id="winDifficulty">Medium</span>
+                    </div>
+                </div>
+
+                <!-- Record Name for Leaderboard -->
+                <div class="leaderboard-save-box" id="leaderboardSaveBox">
+                    <label for="winnerNameInput" class="save-box-label">Enter your name for the Leaderboard:</label>
+                    <div class="save-input-row">
+                        <input type="text" id="winnerNameInput" maxlength="15" placeholder="Player Name" class="winner-input">
+                        <button id="saveScoreBtn" class="btn btn-save-score">Save Rank</button>
+                    </div>
+                    <span id="savedScoreFeedback" class="saved-feedback hidden">✓ Score recorded on Leaderboard!</span>
+                </div>
+
+                <div class="modal-actions">
+                    <button id="winPlayAgainBtn" class="btn btn-primary btn-lg">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                        </svg>
+                        <span>Play Again</span>
+                    </button>
+                    <button id="winBackHomeBtn" class="btn btn-secondary btn-lg">
+                        <span>Back to Home</span>
+                    </button>
+                </div>
+            </div>
         </div>
 
+        <!-- 4. GAME OVER MODAL -->
+        <div id="gameOverModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="gameOverTitle">
+            <div class="modal-card gameover-card">
+                <div class="modal-glow-loss"></div>
+                <div class="gameover-icon-wrapper">
+                    <div class="gameover-skull">💀</div>
+                </div>
+                <h2 id="gameOverTitle" class="modal-headline text-neon-pink">GAME OVER</h2>
+                <p class="modal-subtext">You've exhausted all your attempts! Don't give up, try again.</p>
 
-        <button id="restart" onclick="restartGame()">
-            🔄 Play Again
-        </button>
+                <div class="revealed-number-box loss-border">
+                    <span class="revealed-number-label">THE SECRET NUMBER WAS</span>
+                    <span class="revealed-number-value text-neon-pink" id="gameOverSecretNumber">73</span>
+                </div>
 
-        <button onclick="resetProgress()">
-            🗑️ Reset Progress
-        </button>
+                <div class="modal-stats-grid">
+                    <div class="modal-stat-box">
+                        <span class="modal-stat-label">ATTEMPTS USED</span>
+                        <span class="modal-stat-value" id="gameOverAttemptsUsed">8 / 8</span>
+                    </div>
+                    <div class="modal-stat-box">
+                        <span class="modal-stat-label">TIME ELAPSED</span>
+                        <span class="modal-stat-value font-mono" id="gameOverTimeTaken">01:14</span>
+                    </div>
+                    <div class="modal-stat-box">
+                        <span class="modal-stat-label">DIFFICULTY</span>
+                        <span class="modal-stat-value" id="gameOverDifficulty">Medium</span>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button id="gameOverTryAgainBtn" class="btn btn-primary btn-lg">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                        </svg>
+                        <span>Try Again</span>
+                    </button>
+                    <button id="gameOverBackHomeBtn" class="btn btn-secondary btn-lg">
+                        <span>Back to Home</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. STATISTICS DASHBOARD MODAL -->
+        <div id="statsModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="statsTitle">
+            <div class="modal-card wide-card">
+                <div class="modal-top-bar">
+                    <h2 id="statsTitle" class="modal-header-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="20" x2="18" y2="10" />
+                            <line x1="12" y1="20" x2="12" y2="4" />
+                            <line x1="6" y1="20" x2="6" y2="14" />
+                        </svg>
+                        Player Statistics
+                    </h2>
+                    <button class="modal-close-btn" data-close="statsModal" aria-label="Close modal">&times;</button>
+                </div>
+
+                <div class="stats-overview-grid">
+                    <div class="stat-metric-card">
+                        <span class="stat-metric-num" id="statTotalPlayed">0</span>
+                        <span class="stat-metric-lbl">Total Games</span>
+                    </div>
+                    <div class="stat-metric-card">
+                        <span class="stat-metric-num text-neon-green" id="statTotalWon">0</span>
+                        <span class="stat-metric-lbl">Games Won</span>
+                    </div>
+                    <div class="stat-metric-card">
+                        <span class="stat-metric-num text-neon-cyan" id="statWinRate">0%</span>
+                        <span class="stat-metric-lbl">Win Rate</span>
+                    </div>
+                    <div class="stat-metric-card">
+                        <span class="stat-metric-num font-mono text-neon-yellow" id="statBestTime">--:--</span>
+                        <span class="stat-metric-lbl">Best Time</span>
+                    </div>
+                </div>
+
+                <!-- Difficulty Breakdown Cards -->
+                <div class="stats-section-title">Performance by Difficulty</div>
+                <div class="difficulty-stats-grid">
+                    <div class="diff-stat-card border-easy">
+                        <div class="diff-stat-name">🌱 Easy (1–50)</div>
+                        <div class="diff-stat-data">
+                            <span>Won: <strong id="statEasyWon">0</strong>/<span id="statEasyPlayed">0</span></span>
+                            <span>Best Time: <strong id="statEasyTime">--:--</strong></span>
+                            <span>Fewest Guesses: <strong id="statEasyGuesses">--</strong></span>
+                        </div>
+                    </div>
+                    <div class="diff-stat-card border-medium">
+                        <div class="diff-stat-name">⚡ Medium (1–100)</div>
+                        <div class="diff-stat-data">
+                            <span>Won: <strong id="statMedWon">0</strong>/<span id="statMedPlayed">0</span></span>
+                            <span>Best Time: <strong id="statMedTime">--:--</strong></span>
+                            <span>Fewest Guesses: <strong id="statMedGuesses">--</strong></span>
+                        </div>
+                    </div>
+                    <div class="diff-stat-card border-hard">
+                        <div class="diff-stat-name">🔥 Hard (1–500)</div>
+                        <div class="diff-stat-data">
+                            <span>Won: <strong id="statHardWon">0</strong>/<span id="statHardPlayed">0</span></span>
+                            <span>Best Time: <strong id="statHardTime">--:--</strong></span>
+                            <span>Fewest Guesses: <strong id="statHardGuesses">--</strong></span>
+                        </div>
+                    </div>
+                    <div class="diff-stat-card border-expert">
+                        <div class="diff-stat-name">👑 Expert (1–1000)</div>
+                        <div class="diff-stat-data">
+                            <span>Won: <strong id="statExpertWon">0</strong>/<span id="statExpertPlayed">0</span></span>
+                            <span>Best Time: <strong id="statExpertTime">--:--</strong></span>
+                            <span>Fewest Guesses: <strong id="statExpertGuesses">--</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Game History Table -->
+                <div class="stats-section-title">Recent Matches</div>
+                <div class="history-table-container">
+                    <table class="recent-matches-table">
+                        <thead>
+                            <tr>
+                                <th>Result</th>
+                                <th>Difficulty</th>
+                                <th>Target</th>
+                                <th>Attempts</th>
+                                <th>Time</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentMatchesBody">
+                            <tr>
+                                <td colspan="6" class="table-empty-cell">No matches recorded yet. Play a game!</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="modal-footer-action">
+                    <button id="clearStatsBtn" class="btn btn-danger-outline btn-sm">Clear History</button>
+                    <button class="btn btn-secondary btn-sm" data-close="statsModal">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. LEADERBOARD MODAL -->
+        <div id="leaderboardModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="leaderboardTitle">
+            <div class="modal-card wide-card">
+                <div class="modal-top-bar">
+                    <h2 id="leaderboardTitle" class="modal-header-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+                        </svg>
+                        Hall of Fame & Rankings
+                    </h2>
+                    <button class="modal-close-btn" data-close="leaderboardModal" aria-label="Close modal">&times;</button>
+                </div>
+
+                <!-- Filter by Difficulty Tabs -->
+                <div class="leaderboard-tabs">
+                    <button class="tab-btn active" data-tab="ALL">All Modes</button>
+                    <button class="tab-btn" data-tab="EASY">Easy</button>
+                    <button class="tab-btn" data-tab="MEDIUM">Medium</button>
+                    <button class="tab-btn" data-tab="HARD">Hard</button>
+                    <button class="tab-btn" data-tab="EXPERT">Expert</button>
+                </div>
+
+                <!-- Leaderboard Table -->
+                <div class="leaderboard-table-container">
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Player</th>
+                                <th>Difficulty</th>
+                                <th>Attempts</th>
+                                <th>Time</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboardBody">
+                            <!-- Injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="modal-footer-action">
+                    <button class="btn btn-secondary btn-sm" data-close="leaderboardModal">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. HOW TO PLAY MODAL -->
+        <div id="howToPlayModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="howToPlayTitle">
+            <div class="modal-card medium-card">
+                <div class="modal-top-bar">
+                    <h2 id="howToPlayTitle" class="modal-header-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                        </svg>
+                        How to Play
+                    </h2>
+                    <button class="modal-close-btn" data-close="howToPlayModal" aria-label="Close modal">&times;</button>
+                </div>
+
+                <div class="instructions-list">
+                    <div class="instruction-item">
+                        <div class="instruction-num">1</div>
+                        <div class="instruction-body">
+                            <h4>Select Your Difficulty</h4>
+                            <p>Choose between <strong>Easy (1–50)</strong>, <strong>Medium (1–100)</strong>, <strong>Hard (1–500)</strong>, or <strong>Expert (1–1000)</strong>. Each round secretly generates a new random target number.</p>
+                        </div>
+                    </div>
+
+                    <div class="instruction-item">
+                        <div class="instruction-num">2</div>
+                        <div class="instruction-body">
+                            <h4>Submit Your Guess</h4>
+                            <p>Type your guess into the input field and press <strong>Enter</strong> or click <strong>Guess</strong>. You only have a limited number of attempts to find the secret number!</p>
+                        </div>
+                    </div>
+
+                    <div class="instruction-item">
+                        <div class="instruction-num">3</div>
+                        <div class="instruction-body">
+                            <h4>Follow the Clues</h4>
+                            <p>After each guess, the game gives you immediate direction:</p>
+                            <ul class="instruction-sublist">
+                                <li><span class="badge-clue badge-low">⬆️ Too Low</span> — The secret number is <em>higher</em>.</li>
+                                <li><span class="badge-clue badge-high">⬇️ Too High</span> — The secret number is <em>lower</em>.</li>
+                                <li><span class="badge-clue badge-win">🎉 Correct</span> — You cracked the code and won!</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="instruction-item">
+                        <div class="instruction-num">4</div>
+                        <div class="instruction-body">
+                            <h4>Pro Strategy: Binary Search</h4>
+                            <p>To win efficiently, always guess the <strong>middle</strong> of the remaining range! For example, on 1–100, guess <strong>50</strong> first. If it's Too Low, your next ideal guess is <strong>75</strong>!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer-action">
+                    <button class="btn btn-primary btn-sm" data-close="howToPlayModal">Got It, Let's Play!</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. SETTINGS MODAL -->
+        <div id="settingsModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+            <div class="modal-card small-card">
+                <div class="modal-top-bar">
+                    <h2 id="settingsTitle" class="modal-header-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        Game Settings
+                    </h2>
+                    <button class="modal-close-btn" data-close="settingsModal" aria-label="Close modal">&times;</button>
+                </div>
+
+                <div class="settings-list">
+                    <!-- Sound Toggle -->
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-name">Sound Effects</span>
+                            <span class="setting-desc">Synthesized Web Audio sound cues</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="settingSoundToggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Animations Preference -->
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-name">Visual Animations</span>
+                            <span class="setting-desc">Ambient glowing orbs & confetti</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="settingAnimationToggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Theme Options -->
+                    <div class="setting-row flex-column">
+                        <div class="setting-info">
+                            <span class="setting-name">Theme Customization</span>
+                            <span class="setting-desc">Select your favorite neon accent style</span>
+                        </div>
+                        <div class="theme-selection-grid">
+                            <button class="theme-chip active" data-theme="theme-neon-cyber">
+                                <span class="theme-dot dot-cyber"></span> Neon Cyber
+                            </button>
+                            <button class="theme-chip" data-theme="theme-midnight-purple">
+                                <span class="theme-dot dot-purple"></span> Midnight Purple
+                            </button>
+                            <button class="theme-chip" data-theme="theme-electric-emerald">
+                                <span class="theme-dot dot-emerald"></span> Emerald Matrix
+                            </button>
+                            <button class="theme-chip" data-theme="theme-sunset-blaze">
+                                <span class="theme-dot dot-sunset"></span> Sunset Blaze
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Reset Data -->
+                    <div class="setting-row border-top">
+                        <div class="setting-info">
+                            <span class="setting-name text-danger">Reset All Data</span>
+                            <span class="setting-desc">Clear localStorage stats and leaderboard</span>
+                        </div>
+                        <button id="resetAllDataBtn" class="btn btn-danger-outline btn-sm">Reset</button>
+                    </div>
+                </div>
+
+                <div class="modal-footer-action">
+                    <button class="btn btn-secondary btn-sm" data-close="settingsModal">Done</button>
+                </div>
+            </div>
+        </div>
 
     </div>
 
-
+    <!-- Application Script -->
     <script src="script.js"></script>
-
 </body>
 </html>
-

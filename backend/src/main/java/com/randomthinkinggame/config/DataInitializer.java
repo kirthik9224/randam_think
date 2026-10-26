@@ -29,6 +29,16 @@ public class DataInitializer {
                 playerRepository.save(admin);
             }
 
+            if (!playerRepository.existsByEmail("guest@randomthinkinggame.local")) {
+                Player guest = new Player(
+                        "Guest Explorer",
+                        "guest@randomthinkinggame.local",
+                        encoder.encode("guest-no-password"),
+                        "GUEST"
+                );
+                playerRepository.save(guest);
+            }
+
             if (!playerRepository.existsByEmail("player1@example.com")) {
                 Player player = new Player(
                         "NumberMaster",

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const LeaderboardTable = ({ entries = [], loading = false }) => {
   const getRankBadge = (rank) => {
@@ -53,10 +54,13 @@ const LeaderboardTable = ({ entries = [], loading = false }) => {
 
   if (!entries || entries.length === 0) {
     return (
-      <div className="text-center py-5 bg-body-tertiary rounded-4 border">
+      <div className="text-center py-5 bg-body-tertiary rounded-4 border p-4">
         <div className="display-4 mb-2">🎯</div>
-        <h5>No games recorded yet!</h5>
-        <p className="text-muted">Be the first player to complete a game and claim the #1 spot.</p>
+        <h5 className="fw-bold mb-1">No games recorded yet!</h5>
+        <p className="text-muted mb-3">Be the first player to complete a match and claim the #1 spot on the board.</p>
+        <Link to="/game" className="btn btn-primary rounded-pill px-4 fw-bold">
+          <i className="bi bi-play-circle-fill me-1.5"></i> Play Now
+        </Link>
       </div>
     );
   }
@@ -89,7 +93,20 @@ const LeaderboardTable = ({ entries = [], loading = false }) => {
                     <div className="avatar-circle bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px', fontSize: '14px', fontWeight: 'bold' }}>
                       {item.username ? item.username.charAt(0).toUpperCase() : 'U'}
                     </div>
-                    <span className="fw-semibold">{item.username}</span>
+                    <div>
+                      <div className="fw-semibold text-body">{item.username}</div>
+                      <div>
+                        {String(item.gameId).startsWith('off_') || item.isOffline ? (
+                          <span className="badge bg-secondary-subtle text-body-secondary border font-monospace" style={{ fontSize: '0.68rem' }}>
+                            <i className="bi bi-hdd me-1"></i> Local Session
+                          </span>
+                        ) : (
+                          <span className="badge bg-success-subtle text-success border border-success-subtle font-monospace" style={{ fontSize: '0.68rem' }}>
+                            <i className="bi bi-shield-check me-1"></i> Verified
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </td>
                 <td className="text-end">

@@ -368,4 +368,41 @@
   background-color: rgba(13, 110, 253, 0.06) !important;
 }
 
+/* ==========================================================================
+   Accessibility: Reduced-Motion Support & Contrast Optimizations
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .screen-shake {
+    animation: none !important;
+    transform: none !important;
+  }
+  .animate-pulse,
+  .animate-bounce,
+  .hover-scale {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+.reduced-motion *,
+.reduced-motion *::before,
+.reduced-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+.reduced-motion .screen-shake {
+  animation: none !important;
+}
+
+
 

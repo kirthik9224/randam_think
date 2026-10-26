@@ -1,0 +1,290 @@
+/* ==========================================================================
+   COLORFUL GUESS THE NUMBER APP UI COLLAGE THEME
+   Inspired by modern mobile/casual gaming interfaces:
+   - Deep rich purple & blue gaming gradient background
+   - Glowing amber/orange "Play Now" button
+   - Glowing emerald green "Submit Guess" button
+   - Neon cyan, orange, and emerald feedback cards
+   - Rounded 28px cards with glassmorphic sheen
+   - Bold readable gaming typography
+   ========================================================================== */
+
+:root {
+  --collage-bg-dark: #120b29;
+  --collage-bg-card: rgba(28, 18, 58, 0.85);
+  --collage-border: rgba(168, 85, 247, 0.35);
+  --collage-primary-purple: #8b5cf6;
+  --collage-neon-blue: #38bdf8;
+  --collage-neon-green: #10b981;
+  --collage-neon-orange: #f97316;
+  --collage-neon-yellow: #fbbf24;
+  --collage-neon-red: #ef4444;
+}
+
+/* Background gradient for the whole gaming experience */
+body, [data-bs-theme='dark'] body, .app-wrapper, .collage-theme-body {
+  background: radial-gradient(circle at 50% 15%, #2a1158 0%, #150d38 48%, #090518 100%) !important;
+  color: #f8fafc !important;
+  min-height: 100vh;
+}
+
+.navbar {
+  background: rgba(18, 11, 40, 0.9) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1.5px solid rgba(168, 85, 247, 0.25) !important;
+}
+
+/* Rounded gaming card */
+.collage-card {
+  background: rgba(30, 20, 62, 0.82) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(168, 85, 247, 0.32) !important;
+  border-radius: 28px !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), 0 0 24px rgba(139, 92, 246, 0.12) !important;
+  color: #f8fafc;
+}
+
+/* Glowing Amber/Orange Play Now Button */
+.btn-collage-play {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #f97316 100%) !important;
+  color: #1a0b2e !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.04em;
+  border: none !important;
+  border-radius: 999px !important;
+  box-shadow: 0 10px 32px rgba(245, 158, 11, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.4) !important;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.btn-collage-play:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 16px 42px rgba(249, 115, 22, 0.65), inset 0 2px 6px rgba(255, 255, 255, 0.5) !important;
+  color: #120524 !important;
+}
+
+.btn-collage-play:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+/* Glowing Emerald Green Submit Guess Button */
+.btn-collage-submit {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.05em;
+  border: none !important;
+  border-radius: 999px !important;
+  box-shadow: 0 10px 28px rgba(16, 185, 129, 0.45), inset 0 2px 4px rgba(255, 255, 255, 0.3) !important;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.btn-collage-submit:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 14px 36px rgba(16, 185, 129, 0.6) !important;
+}
+
+.btn-collage-submit:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* Random Number Shortcut Button */
+.btn-collage-random {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 700;
+  border-radius: 18px !important;
+  box-shadow: 0 6px 18px rgba(139, 92, 246, 0.35) !important;
+  transition: all 0.2s ease;
+}
+
+.btn-collage-random:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.5) !important;
+}
+
+/* Large Guess Input */
+.collage-number-input {
+  background: rgba(18, 11, 40, 0.9) !important;
+  border: 2px solid rgba(168, 85, 247, 0.4) !important;
+  border-radius: 22px !important;
+  color: #ffffff !important;
+  font-weight: 900 !important;
+  font-size: 2.5rem !important;
+  letter-spacing: 0.06em;
+  text-align: center;
+  box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+  transition: all 0.25s ease;
+}
+
+.collage-number-input:focus {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 24px rgba(56, 189, 248, 0.45), inset 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+  outline: none;
+}
+
+/* Three Info Cards at the Bottom */
+.collage-info-pill {
+  background: rgba(22, 14, 46, 0.85);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  border-radius: 20px;
+  padding: 12px 14px;
+  text-align: center;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.collage-info-pill:hover {
+  transform: translateY(-2px);
+  border-color: rgba(168, 85, 247, 0.45);
+}
+
+.collage-info-pill .label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.collage-info-pill .val {
+  font-size: 1.25rem;
+  font-weight: 900;
+  font-family: monospace;
+  color: #ffffff;
+}
+
+/* Feedback Alert Banners */
+.feedback-too-low {
+  background: linear-gradient(135deg, rgba(14, 116, 144, 0.45), rgba(6, 182, 212, 0.35)) !important;
+  border: 1.5px solid #06b6d4 !important;
+  color: #e0f2fe !important;
+  border-radius: 20px !important;
+  box-shadow: 0 8px 25px rgba(6, 182, 212, 0.25) !important;
+}
+
+.feedback-too-high {
+  background: linear-gradient(135deg, rgba(194, 65, 12, 0.45), rgba(249, 115, 22, 0.35)) !important;
+  border: 1.5px solid #f97316 !important;
+  color: #ffedd5 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 8px 25px rgba(249, 115, 22, 0.25) !important;
+}
+
+.feedback-correct {
+  background: linear-gradient(135deg, rgba(4, 120, 87, 0.45), rgba(16, 185, 129, 0.35)) !important;
+  border: 1.5px solid #10b981 !important;
+  color: #d1fae5 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3) !important;
+}
+
+/* Home Bottom Four Nav Buttons */
+.home-nav-btn {
+  background: rgba(28, 18, 58, 0.75);
+  border: 1.5px solid rgba(168, 85, 247, 0.25);
+  border-radius: 20px;
+  padding: 12px 16px;
+  color: #f1f5f9;
+  font-weight: 700;
+  font-size: 0.88rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  width: 100%;
+}
+
+.home-nav-btn:hover {
+  background: rgba(45, 28, 92, 0.95);
+  border-color: #38bdf8;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(56, 189, 248, 0.25);
+  color: #ffffff;
+}
+
+.home-nav-btn i {
+  font-size: 1.4rem;
+}
+
+/* Victory Green Screen */
+.victory-card-collage {
+  background: radial-gradient(circle at 50% 20%, #064e3b 0%, #065f46 45%, #022c22 100%) !important;
+  border: 2px solid #10b981 !important;
+  border-radius: 32px !important;
+  box-shadow: 0 20px 60px rgba(16, 185, 129, 0.35), 0 0 30px rgba(16, 185, 129, 0.2) !important;
+}
+
+/* Game Over Red Screen */
+.gameover-card-collage {
+  background: radial-gradient(circle at 50% 20%, #7f1d1d 0%, #450a0a 50%, #1c0808 100%) !important;
+  border: 2px solid #ef4444 !important;
+  border-radius: 32px !important;
+  box-shadow: 0 20px 60px rgba(239, 68, 68, 0.35), 0 0 30px rgba(239, 68, 68, 0.2) !important;
+}
+
+/* Secret Number Reveal Card */
+.revealed-number-box {
+  background: rgba(0, 0, 0, 0.4);
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  border-radius: 24px;
+  padding: 16px 24px;
+  display: inline-block;
+}
+
+/* Number Illustration Glow */
+.lightbulb-illustration-box {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 16px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.25) 0%, rgba(245, 158, 11, 0.05) 60%, transparent 80%);
+}
+
+.lightbulb-illustration-box::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  box-shadow: 0 0 35px rgba(251, 191, 36, 0.4);
+  animation: bulb-pulse 2.2s infinite alternate ease-in-out;
+}
+
+@keyframes bulb-pulse {
+  0% { transform: scale(0.95); opacity: 0.6; }
+  100% { transform: scale(1.1); opacity: 1; }
+}
+
+/* Heart Life Icons */
+.heart-life {
+  display: inline-block;
+  color: #ef4444;
+  font-size: 1.25rem;
+  margin: 0 2px;
+  filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.7));
+  animation: heart-beat 1.6s infinite ease-in-out;
+}
+
+.heart-life-lost {
+  display: inline-block;
+  color: #475569;
+  font-size: 1.25rem;
+  margin: 0 2px;
+  opacity: 0.5;
+}
+
+@keyframes heart-beat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}

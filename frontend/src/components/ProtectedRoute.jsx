@@ -2,16 +2,20 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import authService from '../services/authService';
 
-const ProtectedRoute = ({ children, requireAdmin = false }) => {
+const ProtectedRoute = ({ children, requireAdmin = false, allowGuest = true }) => {
   const location = useLocation();
-  const isAuthenticated = authService.isAuthenticated();
-  const isAdmin = authService.isAdmin();
+  let user = authService.getCurrentUser();
 
-  if (!isAuthenticated) {
+  // If unauthenticated but guest play is allowed on this route, initialize guest session
+  if (!user && allowGuest) {
+    user = authService.loginAsGuest('Guest Player');
+  }
+
+  if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (requireAdmin && !isAdmin) {
+  if (requireAdmin && user.role !== 'ADMIN') {
     return <Navigate to="/dashboard" replace />;
   }
 
