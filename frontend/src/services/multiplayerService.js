@@ -153,7 +153,10 @@ class MultiplayerService {
 
     // Also attempt native STOMP WebSocket connection
     try {
-      const socketUrl = 'ws://localhost:8080/ws-multiplayer';
+      const defaultWsUrl = (typeof window !== 'undefined' && window.location.protocol === 'https:')
+        ? `wss://${window.location.host}/ws-multiplayer`
+        : 'ws://localhost:8080/ws-multiplayer';
+      const socketUrl = import.meta.env.VITE_WS_URL || defaultWsUrl;
       this.stompClient = new Client({
         brokerURL: socketUrl,
         reconnectDelay: 3000,
