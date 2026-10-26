@@ -156,6 +156,12 @@ public class MultiplayerService {
         if ("TEAM_BATTLE".equalsIgnoreCase(room.getMatchType())) {
             room.setTotalRounds(req.getTotalRounds() > 0 ? req.getTotalRounds() : 3);
             room.setMaxPlayers(req.getMaxPlayers() >= 2 ? req.getMaxPlayers() : 4);
+            if (req.getTeamRedName() != null && !req.getTeamRedName().isBlank()) {
+                room.setTeamRedName(req.getTeamRedName().trim());
+            }
+            if (req.getTeamBlueName() != null && !req.getTeamBlueName().isBlank()) {
+                room.setTeamBlueName(req.getTeamBlueName().trim());
+            }
         } else {
             room.setTotalRounds(req.getTotalRounds() > 0 ? req.getTotalRounds() : 1);
             room.setMaxPlayers(req.getMaxPlayers() >= 2 ? req.getMaxPlayers() : 4);

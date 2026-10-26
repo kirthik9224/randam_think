@@ -81,7 +81,7 @@ const MultiplayerLobby = ({
             <div className="mp-glass-card p-4 team-red-card h-100">
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <h4 className="fw-black text-danger mb-0 d-flex align-items-center gap-2">
-                  <span>🔥</span> TEAM RED ({redPlayers.length})
+                  <span>🔥</span> {room.teamRedName || 'TEAM RED'} ({redPlayers.length})
                 </h4>
                 {currentPlayer?.team !== 'TEAM_RED' && (
                   <button
@@ -136,7 +136,7 @@ const MultiplayerLobby = ({
             <div className="mp-glass-card p-4 team-blue-card h-100">
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <h4 className="fw-black text-primary mb-0 d-flex align-items-center gap-2">
-                  <span>⚡</span> TEAM BLUE ({bluePlayers.length})
+                  <span>⚡</span> {room.teamBlueName || 'TEAM BLUE'} ({bluePlayers.length})
                 </h4>
                 {currentPlayer?.team !== 'TEAM_BLUE' && (
                   <button

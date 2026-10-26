@@ -80,6 +80,12 @@ public class MultiplayerRoom {
     @Column(name = "team_blue_score", nullable = false)
     private int teamBlueScore = 0;
 
+    @Column(name = "team_red_name", length = 50)
+    private String teamRedName = "Team Red";
+
+    @Column(name = "team_blue_name", length = 50)
+    private String teamBlueName = "Team Blue";
+
     @Column(name = "stake_amount", nullable = false)
     private long stakeAmount = 0L;
 
@@ -346,6 +352,22 @@ public class MultiplayerRoom {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getTeamRedName() {
+        return teamRedName != null ? teamRedName : "Team Red";
+    }
+
+    public void setTeamRedName(String teamRedName) {
+        this.teamRedName = teamRedName;
+    }
+
+    public String getTeamBlueName() {
+        return teamBlueName != null ? teamBlueName : "Team Blue";
+    }
+
+    public void setTeamBlueName(String teamBlueName) {
+        this.teamBlueName = teamBlueName;
     }
 
     public List<RoomPlayer> getPlayers() {

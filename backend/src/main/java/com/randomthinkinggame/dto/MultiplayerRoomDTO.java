@@ -32,6 +32,8 @@ public class MultiplayerRoomDTO {
     private String roundWinningTeam;
     private int teamRedScore;
     private int teamBlueScore;
+    private String teamRedName;
+    private String teamBlueName;
     private long stakeAmount;
     private long totalPrizePool;
     private Long matchWinnerId;
@@ -75,6 +77,8 @@ public class MultiplayerRoomDTO {
         this.roundWinningTeam = room.getRoundWinningTeam();
         this.teamRedScore = room.getTeamRedScore();
         this.teamBlueScore = room.getTeamBlueScore();
+        this.teamRedName = room.getTeamRedName();
+        this.teamBlueName = room.getTeamBlueName();
         this.stakeAmount = room.getStakeAmount();
         this.totalPrizePool = room.getTotalPrizePool();
         this.matchWinnerId = room.getMatchWinnerId();
@@ -275,6 +279,22 @@ public class MultiplayerRoomDTO {
 
     public void setTeamBlueScore(int teamBlueScore) {
         this.teamBlueScore = teamBlueScore;
+    }
+
+    public String getTeamRedName() {
+        return teamRedName != null ? teamRedName : "Team Red";
+    }
+
+    public void setTeamRedName(String teamRedName) {
+        this.teamRedName = teamRedName;
+    }
+
+    public String getTeamBlueName() {
+        return teamBlueName != null ? teamBlueName : "Team Blue";
+    }
+
+    public void setTeamBlueName(String teamBlueName) {
+        this.teamBlueName = teamBlueName;
     }
 
     public long getStakeAmount() {

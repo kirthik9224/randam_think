@@ -129,3 +129,42 @@
   border-color: #fbbf24;
   transform: scale(1.02);
 }
+
+/* Matchmaking Radar Animation */
+.mp-radar-circle {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 3px solid #38bdf8;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem auto;
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.4);
+}
+
+.mp-radar-circle::before,
+.mp-radar-circle::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: 50%;
+  border: 2px solid #38bdf8;
+  animation: radar-ripple 2s infinite cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.mp-radar-circle::after {
+  animation-delay: 1s;
+}
+
+@keyframes radar-ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}

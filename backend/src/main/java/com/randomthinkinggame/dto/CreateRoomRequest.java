@@ -10,6 +10,8 @@ public class CreateRoomRequest {
     private int attemptsPerRound = 7;
     private int totalRounds = 3;
     private String team = "TEAM_RED"; // For team battle
+    private String teamRedName = "Team Red";
+    private String teamBlueName = "Team Blue";
 
     public CreateRoomRequest() {}
 
@@ -83,5 +85,21 @@ public class CreateRoomRequest {
 
     public void setTeam(String team) {
         this.team = team;
+    }
+
+    public String getTeamRedName() {
+        return teamRedName;
+    }
+
+    public void setTeamRedName(String teamRedName) {
+        this.teamRedName = teamRedName;
+    }
+
+    public String getTeamBlueName() {
+        return teamBlueName;
+    }
+
+    public void setTeamBlueName(String teamBlueName) {
+        this.teamBlueName = teamBlueName;
     }
 }

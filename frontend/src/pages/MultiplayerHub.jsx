@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 import multiplayerService from '../services/multiplayerService';
@@ -14,23 +14,42 @@ const MultiplayerHub = () => {
   const [coins, setCoins] = useState(1000);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [modalError, setModalError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
   // Modals state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
-  const [selectedMode, setSelectedMode] = useState('FRIENDS');
+  const [selectedMode, setSelectedMode] = useState('FRIENDS'); // 'FRIENDS' | 'TEAM_BATTLE'
+  const [modalError, setModalError] = useState('');
 
-  // Form states
+  // Matchmaking (Quick Match) State
+  const [isSearchingMatch, setIsSearchingMatch] = useState(false);
+  const [searchElapsedSeconds, setSearchElapsedSeconds] = useState(0);
+  const [matchStatusMessage, setMatchStatusMessage] = useState('Searching for an opponent...');
+  const searchTimerRef = useRef(null);
+  const pollIntervalRef = useRef(null);
+
+  // Form states - Creation
   const [roomName, setRoomName] = useState('');
-  const [stakeAmount, setStakeAmount] = useState(0);
+  const [minNumber, setMinNumber] = useState(1);
+  const [maxNumber, setMaxNumber] = useState(100);
+  const [attemptsPerRound, setAttemptsPerRound] = useState(7);
   const [totalRounds, setTotalRounds] = useState(3);
-  const [joinCode, setJoinCode] = useState('');
+  const [stakeAmount, setStakeAmount] = useState(0);
+  const [teamRedName, setTeamRedName] = useState('Team Red');
+  const [teamBlueName, setTeamBlueName] = useState('Team Blue');
+  const [teamSize, setTeamSize] = useState(4); // 2 or 4 players total
   const [selectedTeam, setSelectedTeam] = useState('TEAM_RED');
+
+  // Form states - Joining
+  const [joinCode, setJoinCode] = useState('');
 
   useEffect(() => {
     initSession();
+
+    return () => {
+      cleanupMatchmaking();
+    };
   }, []);
 
   const initSession = async () => {
@@ -71,81 +90,180 @@ const MultiplayerHub = () => {
     }
   };
 
-  const handleQuickMatch = async () => {
+  // -------------------------------------------------------------
+  // QUICK MATCH / MATCHMAKING LOGIC
+  // -------------------------------------------------------------
+  const handleStartQuickMatch = async () => {
     sounds.playClick();
+    setErrorMsg('');
+    setMatchStatusMessage('Searching for a live challenger...');
+    setSearchElapsedSeconds(0);
+    setIsSearchingMatch(true);
+
     try {
-      setLoading(true);
-      setErrorMsg('');
       await authService.ensureUser();
-      const room = await multiplayerService.quickMatch();
-      navigate(`/multiplayer/room/${room.roomCode}`);
-    } catch (e) {
-      setErrorMsg(e.message || 'Quick match failed. Please try again.');
-    } finally {
-      setLoading(false);
+      const res = await multiplayerService.joinMatchmaking();
+
+      if (res.status === 'MATCHED' && res.roomCode) {
+        // Immediate match found!
+        sounds.playVictory();
+        setIsSearchingMatch(false);
+        navigate(`/multiplayer/room/${res.roomCode}`);
+        return;
+      }
+
+      // Start elapsed timer
+      searchTimerRef.current = setInterval(() => {
+        setSearchElapsedSeconds((prev) => prev + 1);
+      }, 1000);
+
+      // Start status poll (every 1.5 seconds)
+      pollIntervalRef.current = setInterval(async () => {
+        try {
+          const statusRes = await multiplayerService.checkMatchmakingStatus();
+          if (statusRes.status === 'MATCHED' && statusRes.roomCode) {
+            cleanupMatchmaking();
+            sounds.playVictory();
+            setMatchStatusMessage('Opponent Found! Entering Match...');
+            setTimeout(() => {
+              navigate(`/multiplayer/room/${statusRes.roomCode}`);
+            }, 600);
+          } else if (statusRes.status === 'TIMEOUT') {
+            cleanupMatchmaking();
+            setMatchStatusMessage(statusRes.message || 'No live opponent found in queue.');
+          } else if (statusRes.waitTimeSeconds !== undefined) {
+            setSearchElapsedSeconds(statusRes.waitTimeSeconds);
+          }
+        } catch (pollErr) {
+          console.warn('Matchmaking poll error:', pollErr);
+        }
+      }, 1500);
+
+    } catch (err) {
+      cleanupMatchmaking();
+      setErrorMsg(err.message || 'Failed to start matchmaking search');
     }
   };
 
+  const handleCancelQuickMatch = async () => {
+    sounds.playClick();
+    cleanupMatchmaking();
+    try {
+      await multiplayerService.cancelMatchmaking();
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  const cleanupMatchmaking = () => {
+    if (searchTimerRef.current) {
+      clearInterval(searchTimerRef.current);
+      searchTimerRef.current = null;
+    }
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+    setIsSearchingMatch(false);
+  };
+
+  // -------------------------------------------------------------
+  // MODAL CONTROLS
+  // -------------------------------------------------------------
   const openCreateModal = (mode) => {
     sounds.playClick();
     setSelectedMode(mode);
     setModalError('');
+    if (mode === 'TEAM_BATTLE') {
+      setRoomName('Red vs Blue Clash');
+      setTotalRounds(3);
+      setTeamSize(4);
+      setAttemptsPerRound(7);
+    } else {
+      setRoomName('Private Friends Match');
+      setTotalRounds(1);
+      setTeamSize(4);
+      setAttemptsPerRound(7);
+    }
     setShowCreateModal(true);
   };
 
   const openJoinModal = (mode) => {
     sounds.playClick();
     setSelectedMode(mode);
+    setJoinCode('');
     setModalError('');
     setShowJoinModal(true);
   };
 
-  const handleCreateRoom = async (e) => {
+  const handleCreateRoomSubmit = async (e) => {
     e.preventDefault();
     sounds.playClick();
+    setModalError('');
+
+    const min = parseInt(minNumber, 10);
+    const max = parseInt(maxNumber, 10);
+    if (isNaN(min) || isNaN(max) || min >= max) {
+      setModalError('Max number must be greater than min number');
+      return;
+    }
+
     try {
       setLoading(true);
-      setModalError('');
       const user = await authService.ensureUser();
-      const room = await multiplayerService.createRoom({
+
+      const payload = {
         matchType: selectedMode,
-        roomName: roomName || `${user?.username || 'Player'}'s ${selectedMode === 'TEAM_BATTLE' ? 'Battle' : 'Match'}`,
+        roomName: roomName.trim() || `${user?.username || 'Player'}'s Match`,
+        minNumber: min,
+        maxNumber: max,
+        attemptsPerRound: parseInt(attemptsPerRound, 10) || 7,
+        totalRounds: selectedMode === 'TEAM_BATTLE' ? parseInt(totalRounds, 10) : 1,
         stakeAmount: Number(stakeAmount),
-        totalRounds: selectedMode === 'TEAM_BATTLE' ? Number(totalRounds) : 1,
+        maxPlayers: parseInt(teamSize, 10) || 4,
         team: selectedTeam,
-        maxPlayers: selectedMode === 'TEAM_BATTLE' ? 4 : 4,
-        minNumber: 1,
-        maxNumber: 100,
-        attemptsPerRound: 7,
-      });
+        teamRedName: teamRedName.trim() || 'Team Red',
+        teamBlueName: teamBlueName.trim() || 'Team Blue',
+      };
+
+      const room = await multiplayerService.createRoom(payload);
       setShowCreateModal(false);
       navigate(`/multiplayer/room/${room.roomCode}`);
-    } catch (e) {
-      setModalError(e.message || 'Failed to create room');
+    } catch (err) {
+      setModalError(err.message || 'Failed to create room. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleJoinRoom = async (e) => {
+  const handleJoinRoomSubmit = async (e) => {
     e.preventDefault();
     sounds.playClick();
-    if (!joinCode || joinCode.trim().length < 4) {
-      setModalError('Please enter a valid room code');
+    setModalError('');
+
+    const cleanCode = joinCode.trim().toUpperCase();
+    if (!cleanCode || cleanCode.length < 4) {
+      setModalError('Please enter a valid 6-character room code');
       return;
     }
+
     try {
       setLoading(true);
-      setModalError('');
       await authService.ensureUser();
-      const room = await multiplayerService.joinRoom(joinCode.trim().toUpperCase(), selectedTeam);
+      const room = await multiplayerService.joinRoom(cleanCode, selectedMode === 'TEAM_BATTLE' ? selectedTeam : 'SOLO');
       setShowJoinModal(false);
       navigate(`/multiplayer/room/${room.roomCode}`);
-    } catch (e) {
-      setModalError(e.message || 'Failed to join room. Please check the code.');
+    } catch (err) {
+      setModalError(err.message || 'Could not join room. Check code or room status.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatTimer = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -255,17 +373,10 @@ const MultiplayerHub = () => {
 
                   <button
                     className="btn btn-primary py-3 rounded-pill fw-black fs-5 shadow"
-                    onClick={handleQuickMatch}
-                    disabled={loading}
+                    onClick={handleStartQuickMatch}
+                    disabled={isSearchingMatch}
                   >
-                    {loading ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                        Searching...
-                      </>
-                    ) : (
-                      '🚀 Find Match Now'
-                    )}
+                    🚀 Find Match Now
                   </button>
                 </div>
               </div>
@@ -306,7 +417,44 @@ const MultiplayerHub = () => {
           <TeamLeaderboard />
         )}
 
-        {/* CREATE ROOM MODAL */}
+        {/* ------------------------------------------------------------------ */}
+        {/* QUICK MATCH SEARCHING MODAL */}
+        {/* ------------------------------------------------------------------ */}
+        {isSearchingMatch && (
+          <div
+            className="modal fade show d-block"
+            tabIndex="-1"
+            style={{ backgroundColor: 'rgba(5, 2, 18, 0.9)', backdropFilter: 'blur(10px)', zIndex: 1070 }}
+          >
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content mp-glass-card p-5 text-center border-0 shadow-2xl">
+                <div className="mp-radar-circle">
+                  <span className="fs-1">🎯</span>
+                </div>
+
+                <h3 className="fw-black text-white mb-2">Searching for Opponent</h3>
+                <p className="text-info fw-bold mb-1">{matchStatusMessage}</p>
+                <div className="display-6 fw-mono text-warning my-3">
+                  {formatTimer(searchElapsedSeconds)}
+                </div>
+                <p className="text-white-50 small mb-4">
+                  Looking for another player waiting in the matchmaking queue...
+                </p>
+
+                <button
+                  className="btn btn-outline-danger px-4 py-2.5 rounded-pill fw-bold"
+                  onClick={handleCancelQuickMatch}
+                >
+                  <i className="bi bi-x-circle me-1"></i> Cancel Search
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ------------------------------------------------------------------ */}
+        {/* CREATE ROOM MODAL (Friends & Team Battle) */}
+        {/* ------------------------------------------------------------------ */}
         {showCreateModal && (
           <div
             className="modal fade show d-block"
@@ -318,7 +466,7 @@ const MultiplayerHub = () => {
               <div className="modal-content mp-glass-card p-4 border-0">
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <h4 className="fw-black text-white mb-0">
-                    Create {selectedMode === 'TEAM_BATTLE' ? '⚔️ Team Battle' : '👥 Private Room'}
+                    {selectedMode === 'TEAM_BATTLE' ? '⚔️ Create Team Battle' : '👥 Create Private Room'}
                   </h4>
                   <button
                     type="button"
@@ -329,39 +477,125 @@ const MultiplayerHub = () => {
 
                 {modalError && <div className="alert alert-danger py-2 small mb-3">{modalError}</div>}
 
-                <form onSubmit={handleCreateRoom}>
+                <form onSubmit={handleCreateRoomSubmit}>
+                  {/* Room / Match Name */}
                   <div className="mb-3">
-                    <label className="form-label text-white-50 small">Room Name</label>
+                    <label className="form-label text-white-50 small">Match Name</label>
                     <input
                       type="text"
                       className="form-control bg-dark text-white border-secondary"
-                      placeholder="My Epic Match"
+                      placeholder={selectedMode === 'TEAM_BATTLE' ? 'Red vs Blue Clash' : 'My Private Match'}
                       value={roomName}
                       onChange={(e) => setRoomName(e.target.value)}
                     />
                   </div>
 
+                  {/* Team Battle Specific Fields */}
                   {selectedMode === 'TEAM_BATTLE' && (
-                    <div className="mb-3">
-                      <label className="form-label text-white-50 small">Choose Your Team</label>
-                      <div className="d-flex gap-2">
-                        <button
-                          type="button"
-                          className={`btn flex-grow-1 fw-bold rounded-pill ${selectedTeam === 'TEAM_RED' ? 'btn-danger' : 'btn-outline-danger'}`}
-                          onClick={() => setSelectedTeam('TEAM_RED')}
-                        >
-                          🔥 Team Red
-                        </button>
-                        <button
-                          type="button"
-                          className={`btn flex-grow-1 fw-bold rounded-pill ${selectedTeam === 'TEAM_BLUE' ? 'btn-primary' : 'btn-outline-primary'}`}
-                          onClick={() => setSelectedTeam('TEAM_BLUE')}
-                        >
-                          ⚡ Team Blue
-                        </button>
+                    <>
+                      <div className="row g-2 mb-3">
+                        <div className="col-6">
+                          <label className="form-label text-danger small fw-bold">🔥 Team 1 Name</label>
+                          <input
+                            type="text"
+                            className="form-control bg-dark text-white border-danger"
+                            value={teamRedName}
+                            onChange={(e) => setTeamRedName(e.target.value)}
+                          />
+                        </div>
+                        <div className="col-6">
+                          <label className="form-label text-primary small fw-bold">⚡ Team 2 Name</label>
+                          <input
+                            type="text"
+                            className="form-control bg-dark text-white border-primary"
+                            value={teamBlueName}
+                            onChange={(e) => setTeamBlueName(e.target.value)}
+                          />
+                        </div>
                       </div>
-                    </div>
+
+                      <div className="mb-3">
+                        <label className="form-label text-white-50 small">Join Which Team First?</label>
+                        <div className="d-flex gap-2">
+                          <button
+                            type="button"
+                            className={`btn flex-grow-1 fw-bold rounded-pill ${selectedTeam === 'TEAM_RED' ? 'btn-danger' : 'btn-outline-danger'}`}
+                            onClick={() => setSelectedTeam('TEAM_RED')}
+                          >
+                            🔥 {teamRedName || 'Team Red'}
+                          </button>
+                          <button
+                            type="button"
+                            className={`btn flex-grow-1 fw-bold rounded-pill ${selectedTeam === 'TEAM_BLUE' ? 'btn-primary' : 'btn-outline-primary'}`}
+                            onClick={() => setSelectedTeam('TEAM_BLUE')}
+                          >
+                            ⚡ {teamBlueName || 'Team Blue'}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="row g-2 mb-3">
+                        <div className="col-6">
+                          <label className="form-label text-white-50 small">Total Rounds</label>
+                          <select
+                            className="form-select bg-dark text-white border-secondary"
+                            value={totalRounds}
+                            onChange={(e) => setTotalRounds(Number(e.target.value))}
+                          >
+                            <option value={3}>Best of 3 (First to 2)</option>
+                            <option value={5}>Best of 5 (First to 3)</option>
+                            <option value={1}>Single Sudden Death</option>
+                          </select>
+                        </div>
+                        <div className="col-6">
+                          <label className="form-label text-white-50 small">Match Size</label>
+                          <select
+                            className="form-select bg-dark text-white border-secondary"
+                            value={teamSize}
+                            onChange={(e) => setTeamSize(Number(e.target.value))}
+                          >
+                            <option value={2}>1v1 (2 Players Total)</option>
+                            <option value={4}>2v2 (4 Players Total)</option>
+                          </select>
+                        </div>
+                      </div>
+                    </>
                   )}
+
+                  {/* Range & Attempts */}
+                  <div className="row g-2 mb-3">
+                    <div className="col-4">
+                      <label className="form-label text-white-50 small">Min Number</label>
+                      <input
+                        type="number"
+                        className="form-control bg-dark text-white border-secondary"
+                        value={minNumber}
+                        onChange={(e) => setMinNumber(e.target.value)}
+                        min={1}
+                      />
+                    </div>
+                    <div className="col-4">
+                      <label className="form-label text-white-50 small">Max Number</label>
+                      <input
+                        type="number"
+                        className="form-control bg-dark text-white border-secondary"
+                        value={maxNumber}
+                        onChange={(e) => setMaxNumber(e.target.value)}
+                        min={2}
+                      />
+                    </div>
+                    <div className="col-4">
+                      <label className="form-label text-white-50 small">Attempts/Round</label>
+                      <input
+                        type="number"
+                        className="form-control bg-dark text-white border-secondary"
+                        value={attemptsPerRound}
+                        onChange={(e) => setAttemptsPerRound(e.target.value)}
+                        min={3}
+                        max={15}
+                      />
+                    </div>
+                  </div>
 
                   {/* Virtual Coin Stake Selector */}
                   <div className="mb-4">
@@ -384,7 +618,7 @@ const MultiplayerHub = () => {
                     </div>
                     {stakeAmount > 0 && (
                       <div className="text-info small mt-2">
-                        Winner / winning team claims the entire prize pool! 100% refunded if cancelled.
+                        Winner or winning team claims the entire prize pool! 100% refunded if cancelled.
                       </div>
                     )}
                   </div>
@@ -400,7 +634,7 @@ const MultiplayerHub = () => {
                         Creating Room...
                       </>
                     ) : (
-                      'Create & Enter Lobby 🚀'
+                      selectedMode === 'TEAM_BATTLE' ? 'Create Battle & Enter Lobby ⚔️' : 'Create & Enter Lobby 🚀'
                     )}
                   </button>
                 </form>
@@ -409,7 +643,9 @@ const MultiplayerHub = () => {
           </div>
         )}
 
-        {/* JOIN ROOM MODAL */}
+        {/* ------------------------------------------------------------------ */}
+        {/* JOIN ROOM MODAL (Friends & Team Battle) */}
+        {/* ------------------------------------------------------------------ */}
         {showJoinModal && (
           <div
             className="modal fade show d-block"
@@ -420,7 +656,9 @@ const MultiplayerHub = () => {
             <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
               <div className="modal-content mp-glass-card p-4 border-0">
                 <div className="d-flex justify-content-between align-items-center mb-3">
-                  <h4 className="fw-black text-white mb-0">Join Private Match</h4>
+                  <h4 className="fw-black text-white mb-0">
+                    {selectedMode === 'TEAM_BATTLE' ? '⚔️ Join Team Battle' : '👥 Join Private Room'}
+                  </h4>
                   <button
                     type="button"
                     className="btn-close btn-close-white"
@@ -430,7 +668,7 @@ const MultiplayerHub = () => {
 
                 {modalError && <div className="alert alert-danger py-2 small mb-3">{modalError}</div>}
 
-                <form onSubmit={handleJoinRoom}>
+                <form onSubmit={handleJoinRoomSubmit}>
                   <div className="mb-3">
                     <label className="form-label text-white-50 small">Enter 6-Character Room Code</label>
                     <input
@@ -446,7 +684,7 @@ const MultiplayerHub = () => {
 
                   {selectedMode === 'TEAM_BATTLE' && (
                     <div className="mb-4">
-                      <label className="form-label text-white-50 small">Preferred Team</label>
+                      <label className="form-label text-white-50 small">Preferred Team to Join</label>
                       <div className="d-flex gap-2">
                         <button
                           type="button"
@@ -477,7 +715,7 @@ const MultiplayerHub = () => {
                         Joining...
                       </>
                     ) : (
-                      'Join Match 🎮'
+                      selectedMode === 'TEAM_BATTLE' ? 'Join Battle ⚔️' : 'Join Match 🎮'
                     )}
                   </button>
                 </form>

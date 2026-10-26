@@ -17,10 +17,33 @@ import java.util.Map;
 public class MultiplayerController {
 
     private final MultiplayerService multiplayerService;
+    private final com.randomthinkinggame.service.MatchmakingService matchmakingService;
 
     @Autowired
-    public MultiplayerController(MultiplayerService multiplayerService) {
+    public MultiplayerController(MultiplayerService multiplayerService, com.randomthinkinggame.service.MatchmakingService matchmakingService) {
         this.multiplayerService = multiplayerService;
+        this.matchmakingService = matchmakingService;
+    }
+
+    @PostMapping("/matchmaking/join")
+    public ResponseEntity<Map<String, Object>> joinMatchmakingQueue(
+            @RequestParam(required = false, defaultValue = "999999") Long playerId) {
+        Map<String, Object> result = matchmakingService.joinQueue(playerId);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/matchmaking/status")
+    public ResponseEntity<Map<String, Object>> getMatchmakingStatus(
+            @RequestParam(required = false, defaultValue = "999999") Long playerId) {
+        Map<String, Object> result = matchmakingService.checkStatus(playerId);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/matchmaking/cancel")
+    public ResponseEntity<Map<String, Object>> cancelMatchmaking(
+            @RequestParam(required = false, defaultValue = "999999") Long playerId) {
+        Map<String, Object> result = matchmakingService.cancelQueue(playerId);
+        return ResponseEntity.ok(result);
     }
 
     @PostMapping("/rooms/create")

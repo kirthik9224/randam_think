@@ -37,6 +37,24 @@ class MultiplayerService {
     return res.data;
   }
 
+  async joinMatchmaking() {
+    const userId = this.getUserId();
+    const res = await api.post(`/multiplayer/matchmaking/join?playerId=${userId}`);
+    return res.data;
+  }
+
+  async checkMatchmakingStatus() {
+    const userId = this.getUserId();
+    const res = await api.get(`/multiplayer/matchmaking/status?playerId=${userId}`);
+    return res.data;
+  }
+
+  async cancelMatchmaking() {
+    const userId = this.getUserId();
+    const res = await api.post(`/multiplayer/matchmaking/cancel?playerId=${userId}`);
+    return res.data;
+  }
+
   async getRoom(roomCode) {
     const res = await api.get(`/multiplayer/rooms/${roomCode.trim().toUpperCase()}`);
     return res.data;
