@@ -2,14 +2,11 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import authService from '../services/authService';
 import sounds from '../utils/soundEffects';
-import ThemeSelectorPill from './ThemeSelectorPill';
-import { getPlayerProgression } from '../utils/progressionHelper';
 
 const Navbar = ({ darkMode, toggleDarkMode, soundEnabled, toggleSound }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const currentUser = authService.getCurrentUser();
-  const prog = getPlayerProgression();
 
   const [showHowToPlayModal, setShowHowToPlayModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -113,23 +110,6 @@ const Navbar = ({ darkMode, toggleDarkMode, soundEnabled, toggleSound }) => {
             </ul>
 
             <div className="d-flex align-items-center gap-2 flex-wrap flex-lg-nowrap ms-lg-auto mt-2 mt-lg-0">
-              {/* Player Level Badge */}
-              <div
-                className="d-none d-xl-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill bg-body-tertiary border text-nowrap flex-shrink-0"
-                title={`${prog.title} • ${prog.currentLevelXp}/${prog.nextLevelXp} XP (${prog.progressPercent}%)`}
-                style={{ fontSize: '0.82rem' }}
-              >
-                <span className="badge bg-primary text-white rounded-pill px-2 py-0.5 font-monospace" style={{ fontSize: '0.7rem' }}>
-                  Lvl {prog.level}
-                </span>
-                <span className="fw-semibold text-body small text-nowrap">
-                  {prog.title}
-                </span>
-              </div>
-
-              {/* Board Theme & Pin Selector Pill */}
-              <ThemeSelectorPill />
-
               {/* Sound Toggle */}
               <button
                 onClick={() => {

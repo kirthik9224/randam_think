@@ -17,7 +17,6 @@ import GameJuiceEffects from '../components/GameJuiceEffects';
 import InteractiveNumpad from '../components/InteractiveNumpad';
 import DeductionAnalyticsBar from '../components/DeductionAnalyticsBar';
 import BossRaidHud from '../components/BossRaidHud';
-import ThemeSelectorPill from '../components/ThemeSelectorPill';
 import { getSelectedPin, applyThemeClass } from '../utils/themeHelper';
 import { recordDailyChallengeResult } from '../utils/dailyChallengeHelper';
 import { getDifficultyConfig, formatRange } from '../utils/gameConfig';
