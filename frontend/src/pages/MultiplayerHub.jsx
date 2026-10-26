@@ -8,12 +8,13 @@ import '../styles/Multiplayer.css';
 
 const MultiplayerHub = () => {
   const navigate = useNavigate();
-  const currentUser = authService.getCurrentUser();
+  const [currentUser, setCurrentUser] = useState(() => authService.getCurrentUser());
 
   const [activeTab, setActiveTab] = useState('modes'); // 'modes' | 'leaderboard'
   const [coins, setCoins] = useState(1000);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [modalError, setModalError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
   // Modals state
@@ -29,12 +30,19 @@ const MultiplayerHub = () => {
   const [selectedTeam, setSelectedTeam] = useState('TEAM_RED');
 
   useEffect(() => {
-    if (!currentUser) {
-      navigate('/login');
-      return;
-    }
-    fetchCoins();
+    initSession();
   }, []);
+
+  const initSession = async () => {
+    try {
+      const user = await authService.ensureUser();
+      setCurrentUser(user);
+      fetchCoins();
+    } catch (e) {
+      console.warn('Could not initialize session:', e);
+      fetchCoins();
+    }
+  };
 
   const fetchCoins = async () => {
     try {
@@ -68,13 +76,28 @@ const MultiplayerHub = () => {
     try {
       setLoading(true);
       setErrorMsg('');
+      await authService.ensureUser();
       const room = await multiplayerService.quickMatch();
       navigate(`/multiplayer/room/${room.roomCode}`);
     } catch (e) {
-      setErrorMsg(e.message || 'Quick match failed');
+      setErrorMsg(e.message || 'Quick match failed. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const openCreateModal = (mode) => {
+    sounds.playClick();
+    setSelectedMode(mode);
+    setModalError('');
+    setShowCreateModal(true);
+  };
+
+  const openJoinModal = (mode) => {
+    sounds.playClick();
+    setSelectedMode(mode);
+    setModalError('');
+    setShowJoinModal(true);
   };
 
   const handleCreateRoom = async (e) => {
@@ -82,10 +105,11 @@ const MultiplayerHub = () => {
     sounds.playClick();
     try {
       setLoading(true);
-      setErrorMsg('');
+      setModalError('');
+      const user = await authService.ensureUser();
       const room = await multiplayerService.createRoom({
         matchType: selectedMode,
-        roomName: roomName || `${currentUser.username}'s ${selectedMode === 'TEAM_BATTLE' ? 'Battle' : 'Match'}`,
+        roomName: roomName || `${user?.username || 'Player'}'s ${selectedMode === 'TEAM_BATTLE' ? 'Battle' : 'Match'}`,
         stakeAmount: Number(stakeAmount),
         totalRounds: selectedMode === 'TEAM_BATTLE' ? Number(totalRounds) : 1,
         team: selectedTeam,
@@ -97,7 +121,7 @@ const MultiplayerHub = () => {
       setShowCreateModal(false);
       navigate(`/multiplayer/room/${room.roomCode}`);
     } catch (e) {
-      setErrorMsg(e.message || 'Failed to create room');
+      setModalError(e.message || 'Failed to create room');
     } finally {
       setLoading(false);
     }
@@ -107,17 +131,18 @@ const MultiplayerHub = () => {
     e.preventDefault();
     sounds.playClick();
     if (!joinCode || joinCode.trim().length < 4) {
-      setErrorMsg('Please enter a valid room code');
+      setModalError('Please enter a valid room code');
       return;
     }
     try {
       setLoading(true);
-      setErrorMsg('');
+      setModalError('');
+      await authService.ensureUser();
       const room = await multiplayerService.joinRoom(joinCode.trim().toUpperCase(), selectedTeam);
       setShowJoinModal(false);
       navigate(`/multiplayer/room/${room.roomCode}`);
     } catch (e) {
-      setErrorMsg(e.message || 'Failed to join room');
+      setModalError(e.message || 'Failed to join room. Please check the code.');
     } finally {
       setLoading(false);
     }
@@ -199,22 +224,14 @@ const MultiplayerHub = () => {
 
                   <div className="d-flex flex-column gap-2">
                     <button
-                      className="btn btn-info py-2.5 rounded-pill fw-bold text-dark"
-                      onClick={() => {
-                        sounds.playClick();
-                        setSelectedMode('FRIENDS');
-                        setShowCreateModal(true);
-                      }}
+                      className="btn btn-info py-2.5 rounded-pill fw-bold text-dark shadow-sm"
+                      onClick={() => openCreateModal('FRIENDS')}
                     >
                       Create Private Room
                     </button>
                     <button
                       className="btn btn-outline-info py-2.5 rounded-pill fw-bold"
-                      onClick={() => {
-                        sounds.playClick();
-                        setSelectedMode('FRIENDS');
-                        setShowJoinModal(true);
-                      }}
+                      onClick={() => openJoinModal('FRIENDS')}
                     >
                       Join with Code
                     </button>
@@ -241,7 +258,14 @@ const MultiplayerHub = () => {
                     onClick={handleQuickMatch}
                     disabled={loading}
                   >
-                    🚀 Find Match Now
+                    {loading ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                        Searching...
+                      </>
+                    ) : (
+                      '🚀 Find Match Now'
+                    )}
                   </button>
                 </div>
               </div>
@@ -262,22 +286,14 @@ const MultiplayerHub = () => {
 
                   <div className="d-flex flex-column gap-2">
                     <button
-                      className="btn btn-danger py-2.5 rounded-pill fw-bold"
-                      onClick={() => {
-                        sounds.playClick();
-                        setSelectedMode('TEAM_BATTLE');
-                        setShowCreateModal(true);
-                      }}
+                      className="btn btn-danger py-2.5 rounded-pill fw-bold shadow-sm"
+                      onClick={() => openCreateModal('TEAM_BATTLE')}
                     >
                       Create Team Battle
                     </button>
                     <button
                       className="btn btn-outline-danger py-2.5 rounded-pill fw-bold"
-                      onClick={() => {
-                        sounds.playClick();
-                        setSelectedMode('TEAM_BATTLE');
-                        setShowJoinModal(true);
-                      }}
+                      onClick={() => openJoinModal('TEAM_BATTLE')}
                     >
                       Join Battle Code
                     </button>
@@ -296,8 +312,9 @@ const MultiplayerHub = () => {
             className="modal fade show d-block"
             tabIndex="-1"
             style={{ backgroundColor: 'rgba(5, 2, 18, 0.85)', backdropFilter: 'blur(8px)', zIndex: 1060 }}
+            onClick={() => setShowCreateModal(false)}
           >
-            <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
               <div className="modal-content mp-glass-card p-4 border-0">
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <h4 className="fw-black text-white mb-0">
@@ -309,6 +326,8 @@ const MultiplayerHub = () => {
                     onClick={() => setShowCreateModal(false)}
                   ></button>
                 </div>
+
+                {modalError && <div className="alert alert-danger py-2 small mb-3">{modalError}</div>}
 
                 <form onSubmit={handleCreateRoom}>
                   <div className="mb-3">
@@ -375,7 +394,14 @@ const MultiplayerHub = () => {
                     className="btn btn-primary w-100 py-3 rounded-pill fw-black fs-5 shadow"
                     disabled={loading}
                   >
-                    Create & Enter Lobby 🚀
+                    {loading ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                        Creating Room...
+                      </>
+                    ) : (
+                      'Create & Enter Lobby 🚀'
+                    )}
                   </button>
                 </form>
               </div>
@@ -389,8 +415,9 @@ const MultiplayerHub = () => {
             className="modal fade show d-block"
             tabIndex="-1"
             style={{ backgroundColor: 'rgba(5, 2, 18, 0.85)', backdropFilter: 'blur(8px)', zIndex: 1060 }}
+            onClick={() => setShowJoinModal(false)}
           >
-            <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
               <div className="modal-content mp-glass-card p-4 border-0">
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <h4 className="fw-black text-white mb-0">Join Private Match</h4>
@@ -400,6 +427,8 @@ const MultiplayerHub = () => {
                     onClick={() => setShowJoinModal(false)}
                   ></button>
                 </div>
+
+                {modalError && <div className="alert alert-danger py-2 small mb-3">{modalError}</div>}
 
                 <form onSubmit={handleJoinRoom}>
                   <div className="mb-3">
@@ -442,7 +471,14 @@ const MultiplayerHub = () => {
                     className="btn btn-warning w-100 py-3 rounded-pill fw-black fs-5 text-dark shadow"
                     disabled={loading || !joinCode}
                   >
-                    Join Match 🎮
+                    {loading ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                        Joining...
+                      </>
+                    ) : (
+                      'Join Match 🎮'
+                    )}
                   </button>
                 </form>
               </div>

@@ -82,6 +82,37 @@ public class MultiplayerService {
         }
     }
 
+    public Player resolvePlayer(Long playerId) {
+        if (playerId != null && playerId > 0 && playerId != 999999L) {
+            Optional<Player> p = playerRepository.findById(playerId);
+            if (p.isPresent()) {
+                Player player = p.get();
+                ensureStarterCoins(player);
+                return player;
+            }
+        }
+
+        String guestName = (playerId != null && playerId == 999999L) ? "Guest Explorer" : "Guest_" + playerId;
+        return playerRepository.findByUsername(guestName)
+                .or(() -> playerRepository.findByEmail("guest@randomthinkinggame.local"))
+                .map(player -> {
+                    ensureStarterCoins(player);
+                    return player;
+                })
+                .orElseGet(() -> {
+                    Player guest = new Player(
+                            guestName,
+                            "guest_" + System.currentTimeMillis() + "@randomthinkinggame.local",
+                            "guest_pass",
+                            "GUEST"
+                    );
+                    guest.setVirtualCoins(1000L);
+                    Player saved = playerRepository.save(guest);
+                    ensureStarterCoins(saved);
+                    return saved;
+                });
+    }
+
     private void ensureStarterCoins(Player player) {
         if (player.getVirtualCoins() <= 0L) {
             player.setVirtualCoins(1000L);
@@ -101,10 +132,7 @@ public class MultiplayerService {
 
     @Transactional
     public MultiplayerRoomDTO createRoom(Long playerId, CreateRoomRequest req) {
-        Player player = playerRepository.findById(playerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Player not found with ID: " + playerId));
-
-        ensureStarterCoins(player);
+        Player player = resolvePlayer(playerId);
 
         ensureStarterCoins(player);
 
@@ -167,10 +195,7 @@ public class MultiplayerService {
         MultiplayerRoom room = roomRepository.findByRoomCode(code)
                 .orElseThrow(() -> new ResourceNotFoundException("Room not found with code: " + code));
 
-        Player player = playerRepository.findById(playerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Player not found with ID: " + playerId));
-
-        ensureStarterCoins(player);
+        Player player = resolvePlayer(playerId);
 
         // Check if player is already inside room
         Optional<RoomPlayer> existingMember = room.getPlayers().stream()
@@ -233,10 +258,7 @@ public class MultiplayerService {
 
     @Transactional
     public MultiplayerRoomDTO quickMatch(Long playerId) {
-        Player player = playerRepository.findById(playerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Player not found with ID: " + playerId));
-
-        ensureStarterCoins(player);
+        Player player = resolvePlayer(playerId);
 
         // Look for open QUICK_MATCH rooms in WAITING status
         List<MultiplayerRoom> openRooms = roomRepository.findByMatchTypeAndStatusOrderByCreatedAtAsc("QUICK_MATCH", "WAITING");
@@ -825,12 +847,11 @@ public class MultiplayerService {
         return new MultiplayerRoomDTO(saved, guesses);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public Map<String, Object> getPlayerCoins(Long playerId) {
-        Player player = playerRepository.findById(playerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Player not found: " + playerId));
+        Player player = resolvePlayer(playerId);
 
-        List<CoinTransaction> txs = coinTransactionRepository.findByPlayerIdOrderByCreatedAtDesc(playerId);
+        List<CoinTransaction> txs = coinTransactionRepository.findByPlayerIdOrderByCreatedAtDesc(player.getId());
 
         Map<String, Object> res = new HashMap<>();
         res.put("playerId", player.getId());
@@ -842,8 +863,7 @@ public class MultiplayerService {
 
     @Transactional
     public Map<String, Object> claimDailyBonus(Long playerId) {
-        Player player = playerRepository.findById(playerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Player not found: " + playerId));
+        Player player = resolvePlayer(playerId);
 
         long bonus = 250L;
         long newBalance = player.getVirtualCoins() + bonus;

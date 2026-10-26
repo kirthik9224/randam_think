@@ -10,36 +10,42 @@ import '../styles/Multiplayer.css';
 const MultiplayerRoomPage = () => {
   const { roomCode } = useParams();
   const navigate = useNavigate();
-  const currentUser = authService.getCurrentUser();
+  const [currentUser, setCurrentUser] = useState(() => authService.getCurrentUser());
 
   const [room, setRoom] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    if (!currentUser) {
-      navigate('/login');
-      return;
-    }
-
-    if (!roomCode) {
-      navigate('/multiplayer');
-      return;
-    }
-
-    // Initial fetch
-    fetchRoom();
-
-    // Connect to WebSocket + Polling stream
-    multiplayerService.connectToRoom(roomCode, (updatedRoom) => {
-      setRoom(updatedRoom);
-      setLoading(false);
-    });
+    initRoom();
 
     return () => {
       multiplayerService.disconnect();
     };
   }, [roomCode]);
+
+  const initRoom = async () => {
+    try {
+      const user = await authService.ensureUser();
+      setCurrentUser(user);
+
+      if (!roomCode) {
+        navigate('/multiplayer');
+        return;
+      }
+
+      // Initial fetch
+      fetchRoom();
+
+      // Connect to WebSocket + Polling stream
+      multiplayerService.connectToRoom(roomCode, (updatedRoom) => {
+        setRoom(updatedRoom);
+        setLoading(false);
+      });
+    } catch (e) {
+      console.warn('Error initializing room session:', e);
+    }
+  };
 
   const fetchRoom = async () => {
     try {
@@ -144,7 +150,7 @@ const MultiplayerRoomPage = () => {
       {room.status === 'WAITING' && (
         <MultiplayerLobby
           room={room}
-          currentUserId={currentUser.id}
+          currentUserId={currentUser?.id || 999999}
           onToggleReady={handleToggleReady}
           onSwitchTeam={handleSwitchTeam}
           onStartMatch={handleStartMatch}
@@ -156,7 +162,7 @@ const MultiplayerRoomPage = () => {
       {room.status === 'IN_PROGRESS' && (
         <MultiplayerArena
           room={room}
-          currentUserId={currentUser.id}
+          currentUserId={currentUser?.id || 999999}
           onSubmitGuess={handleSubmitGuess}
           onNextRound={handleNextRound}
           onLeaveRoom={handleLeaveRoom}
@@ -167,7 +173,7 @@ const MultiplayerRoomPage = () => {
       {room.status === 'FINISHED' && (
         <MultiplayerResult
           room={room}
-          currentUserId={currentUser.id}
+          currentUserId={currentUser?.id || 999999}
           onReturnToHub={() => navigate('/multiplayer')}
         />
       )}

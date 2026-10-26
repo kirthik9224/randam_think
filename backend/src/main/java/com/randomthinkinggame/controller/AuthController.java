@@ -33,6 +33,12 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.ok("Login successful", response));
     }
 
+    @PostMapping("/guest")
+    public ResponseEntity<ApiResponse<AuthResponse>> guestLogin(@RequestParam(required = false) String nickname) {
+        AuthResponse response = authService.guestLogin(nickname);
+        return ResponseEntity.ok(ApiResponse.ok("Guest session initialized", response));
+    }
+
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<String>> logout() {
         return ResponseEntity.ok(ApiResponse.ok("Logged out successfully", null));

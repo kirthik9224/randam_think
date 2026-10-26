@@ -73,6 +73,24 @@ public class AuthService {
         return new AuthResponse(player.getId(), player.getUsername(), player.getEmail(), player.getRole(), "Login successful");
     }
 
+    @Transactional
+    public AuthResponse guestLogin(String nickname) {
+        int rand = (int) (Math.random() * 9000) + 1000;
+        String uname = (nickname != null && !nickname.isBlank() && !nickname.equalsIgnoreCase("Guest Player"))
+                ? nickname.trim()
+                : "Guest_" + rand;
+
+        if (playerRepository.existsByUsername(uname)) {
+            uname = uname + "_" + rand;
+        }
+
+        String email = "guest_" + System.currentTimeMillis() + "_" + rand + "@randomthinkinggame.local";
+        Player guest = new Player(uname, email, passwordEncoder.encode("guest-pass"), "GUEST");
+        guest.setVirtualCoins(1000L);
+        Player saved = playerRepository.save(guest);
+        return new AuthResponse(saved.getId(), saved.getUsername(), saved.getEmail(), saved.getRole(), "Guest login successful");
+    }
+
     public Player findById(Long playerId) {
         return playerRepository.findById(playerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Player not found with ID: " + playerId));

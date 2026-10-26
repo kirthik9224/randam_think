@@ -60,7 +60,21 @@ export const authService = {
     return Boolean(user && user.isGuest);
   },
 
-  loginAsGuest(nickname = 'Guest Player') {
+  async loginAsGuest(nickname = 'Guest Player') {
+    try {
+      const response = await api.post(`/auth/guest?nickname=${encodeURIComponent(nickname)}`);
+      if (response.data && response.data.data) {
+        const guestData = {
+          ...response.data.data,
+          isGuest: true,
+        };
+        this.setCurrentUser(guestData);
+        return guestData;
+      }
+    } catch (e) {
+      console.warn('Backend guest auth failed, falling back to local guest:', e);
+    }
+
     const guestUser = {
       id: 999999,
       username: nickname || 'Guest Player',
@@ -71,6 +85,14 @@ export const authService = {
     };
     this.setCurrentUser(guestUser);
     return guestUser;
+  },
+
+  async ensureUser() {
+    let user = this.getCurrentUser();
+    if (!user || user.id === 999999) {
+      user = await this.loginAsGuest('Guest Player');
+    }
+    return user;
   },
 
   isAdmin() {

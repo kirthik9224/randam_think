@@ -25,7 +25,7 @@ public class MultiplayerController {
 
     @PostMapping("/rooms/create")
     public ResponseEntity<MultiplayerRoomDTO> createRoom(
-            @RequestParam Long playerId,
+            @RequestParam(required = false, defaultValue = "999999") Long playerId,
             @RequestBody(required = false) CreateRoomRequest request) {
         if (request == null) {
             request = new CreateRoomRequest();
@@ -36,14 +36,14 @@ public class MultiplayerController {
 
     @PostMapping("/rooms/join")
     public ResponseEntity<MultiplayerRoomDTO> joinRoom(
-            @RequestParam Long playerId,
+            @RequestParam(required = false, defaultValue = "999999") Long playerId,
             @RequestBody JoinRoomRequest request) {
         MultiplayerRoomDTO room = multiplayerService.joinRoom(playerId, request);
         return ResponseEntity.ok(room);
     }
 
     @PostMapping("/rooms/quick-match")
-    public ResponseEntity<MultiplayerRoomDTO> quickMatch(@RequestParam Long playerId) {
+    public ResponseEntity<MultiplayerRoomDTO> quickMatch(@RequestParam(required = false, defaultValue = "999999") Long playerId) {
         MultiplayerRoomDTO room = multiplayerService.quickMatch(playerId);
         return ResponseEntity.ok(room);
     }
@@ -57,7 +57,7 @@ public class MultiplayerController {
     @PostMapping("/rooms/{roomCode}/ready")
     public ResponseEntity<MultiplayerRoomDTO> toggleReady(
             @PathVariable String roomCode,
-            @RequestParam Long playerId) {
+            @RequestParam(required = false, defaultValue = "999999") Long playerId) {
         MultiplayerRoomDTO room = multiplayerService.toggleReady(roomCode, playerId);
         return ResponseEntity.ok(room);
     }
@@ -65,7 +65,7 @@ public class MultiplayerController {
     @PostMapping("/rooms/{roomCode}/team")
     public ResponseEntity<MultiplayerRoomDTO> switchTeam(
             @PathVariable String roomCode,
-            @RequestParam Long playerId,
+            @RequestParam(required = false, defaultValue = "999999") Long playerId,
             @RequestParam String team) {
         MultiplayerRoomDTO room = multiplayerService.switchTeam(roomCode, playerId, team);
         return ResponseEntity.ok(room);
@@ -74,7 +74,7 @@ public class MultiplayerController {
     @PostMapping("/rooms/{roomCode}/start")
     public ResponseEntity<MultiplayerRoomDTO> startMatch(
             @PathVariable String roomCode,
-            @RequestParam Long playerId) {
+            @RequestParam(required = false, defaultValue = "999999") Long playerId) {
         MultiplayerRoomDTO room = multiplayerService.startMatch(roomCode, playerId);
         return ResponseEntity.ok(room);
     }
@@ -82,7 +82,7 @@ public class MultiplayerController {
     @PostMapping("/rooms/{roomCode}/guess")
     public ResponseEntity<MultiplayerRoomDTO> submitGuess(
             @PathVariable String roomCode,
-            @RequestParam Long playerId,
+            @RequestParam(required = false, defaultValue = "999999") Long playerId,
             @RequestBody MultiplayerGuessRequest request) {
         MultiplayerRoomDTO room = multiplayerService.submitGuess(roomCode, playerId, request.getGuess());
         return ResponseEntity.ok(room);
@@ -91,7 +91,7 @@ public class MultiplayerController {
     @PostMapping("/rooms/{roomCode}/next-round")
     public ResponseEntity<MultiplayerRoomDTO> nextRound(
             @PathVariable String roomCode,
-            @RequestParam Long playerId) {
+            @RequestParam(required = false, defaultValue = "999999") Long playerId) {
         MultiplayerRoomDTO room = multiplayerService.nextRound(roomCode, playerId);
         return ResponseEntity.ok(room);
     }
@@ -99,7 +99,7 @@ public class MultiplayerController {
     @PostMapping("/rooms/{roomCode}/leave")
     public ResponseEntity<MultiplayerRoomDTO> leaveRoom(
             @PathVariable String roomCode,
-            @RequestParam Long playerId) {
+            @RequestParam(required = false, defaultValue = "999999") Long playerId) {
         MultiplayerRoomDTO room = multiplayerService.leaveRoom(roomCode, playerId);
         return ResponseEntity.ok(room);
     }
