@@ -19,6 +19,10 @@ public class GuessResponse {
     private String proximity;
     private String extraClue;
     private Integer distance;
+    private Long coinsEarned;
+    private Long virtualCoins;
+    private Integer consecutiveWins;
+    private String coinRewardMessage;
 
     public GuessResponse() {
     }
@@ -169,5 +173,37 @@ public class GuessResponse {
 
     public void setDistance(Integer distance) {
         this.distance = distance;
+    }
+
+    public Long getCoinsEarned() {
+        return coinsEarned;
+    }
+
+    public void setCoinsEarned(Long coinsEarned) {
+        this.coinsEarned = coinsEarned;
+    }
+
+    public Long getVirtualCoins() {
+        return virtualCoins;
+    }
+
+    public void setVirtualCoins(Long virtualCoins) {
+        this.virtualCoins = virtualCoins;
+    }
+
+    public Integer getConsecutiveWins() {
+        return consecutiveWins;
+    }
+
+    public void setConsecutiveWins(Integer consecutiveWins) {
+        this.consecutiveWins = consecutiveWins;
+    }
+
+    public String getCoinRewardMessage() {
+        return coinRewardMessage;
+    }
+
+    public void setCoinRewardMessage(String coinRewardMessage) {
+        this.coinRewardMessage = coinRewardMessage;
     }
 }

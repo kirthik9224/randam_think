@@ -16,6 +16,7 @@ import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
 import MultiplayerHub from './pages/MultiplayerHub';
 import MultiplayerRoomPage from './pages/MultiplayerRoomPage';
+import WalletPage from './pages/WalletPage';
 
 import sounds from './utils/soundEffects';
 import { applyThemeClass } from './utils/themeHelper';
@@ -94,6 +95,14 @@ function App() {
               element={
                 <ProtectedRoute allowGuest={true}>
                   <MultiplayerHub />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/wallet"
+              element={
+                <ProtectedRoute allowGuest={true}>
+                  <WalletPage />
                 </ProtectedRoute>
               }
             />

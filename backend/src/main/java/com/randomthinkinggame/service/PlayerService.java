@@ -101,6 +101,8 @@ public class PlayerService {
         dto.setBestStreak(bestStreak);
         dto.setBestScore(highestScore);
         dto.setCreatedAt(player.getCreatedAt());
+        dto.setVirtualCoins(player.getVirtualCoins());
+        dto.setConsecutiveWins(player.getConsecutiveWins());
 
         return dto;
     }

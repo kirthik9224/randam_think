@@ -18,6 +18,8 @@ public class PlayerProfileDTO {
     private int bestStreak;
     private int bestScore;
     private LocalDateTime createdAt;
+    private long virtualCoins;
+    private int consecutiveWins;
 
     public PlayerProfileDTO() {
     }
@@ -132,5 +134,21 @@ public class PlayerProfileDTO {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public long getVirtualCoins() {
+        return virtualCoins;
+    }
+
+    public void setVirtualCoins(long virtualCoins) {
+        this.virtualCoins = virtualCoins;
+    }
+
+    public int getConsecutiveWins() {
+        return consecutiveWins;
+    }
+
+    public void setConsecutiveWins(int consecutiveWins) {
+        this.consecutiveWins = consecutiveWins;
     }
 }

@@ -128,7 +128,7 @@ const GameResult = ({ result, onPlayAgain, onNextLevel, onHome }) => {
       </div>
 
       {/* Attempts Used & Elapsed Time Info Cards */}
-      <div className="row g-2.5 mb-4 justify-content-center">
+      <div className="row g-2.5 mb-3 justify-content-center">
         <div className="col-6">
           <div className="p-3 rounded-4" style={{ background: 'rgba(0, 0, 0, 0.35)' }}>
             <span className="text-white-50 small d-block">Attempts Used</span>
@@ -146,6 +146,39 @@ const GameResult = ({ result, onPlayAgain, onNextLevel, onHome }) => {
           </div>
         </div>
       </div>
+
+      {/* Virtual Coin Rewards Card */}
+      {isWon && (
+        <div
+          className="p-3 rounded-4 mb-3 text-start d-flex justify-content-between align-items-center"
+          style={{
+            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.1) 100%)',
+            border: '1px solid rgba(245, 158, 11, 0.4)',
+          }}
+        >
+          <div className="d-flex align-items-center gap-2.5">
+            <span className="fs-2">🪙</span>
+            <div>
+              <span className="fw-bold text-warning d-block" style={{ fontSize: '0.95rem' }}>
+                Reward Verified & Credited
+              </span>
+              <span className="text-white-50 small">
+                {result?.coinRewardMessage || 'Solo victory coins awarded!'}
+              </span>
+            </div>
+          </div>
+          <div className="text-end">
+            <span className="fw-black text-warning font-monospace fs-4">
+              +{result?.coinsEarned || 20}
+            </span>
+            {result?.virtualCoins && (
+              <span className="text-white-50 small font-monospace d-block">
+                Balance: {result.virtualCoins.toLocaleString()}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Action Buttons */}
       <div className="d-flex flex-column gap-2.5 mt-2">

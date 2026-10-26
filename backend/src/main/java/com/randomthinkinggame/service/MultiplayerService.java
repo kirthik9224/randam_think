@@ -33,6 +33,7 @@ public class MultiplayerService {
     private final MultiplayerGuessRepository guessRepository;
     private final PlayerRepository playerRepository;
     private final CoinTransactionRepository coinTransactionRepository;
+    private final CoinWalletService coinWalletService;
     private final SimpMessagingTemplate messagingTemplate;
 
     private final SecureRandom secureRandom = new SecureRandom();
@@ -46,6 +47,7 @@ public class MultiplayerService {
             MultiplayerGuessRepository guessRepository,
             PlayerRepository playerRepository,
             CoinTransactionRepository coinTransactionRepository,
+            CoinWalletService coinWalletService,
             SimpMessagingTemplate messagingTemplate
     ) {
         this.roomRepository = roomRepository;
@@ -53,6 +55,7 @@ public class MultiplayerService {
         this.guessRepository = guessRepository;
         this.playerRepository = playerRepository;
         this.coinTransactionRepository = coinTransactionRepository;
+        this.coinWalletService = coinWalletService;
         this.messagingTemplate = messagingTemplate;
     }
 
@@ -645,58 +648,86 @@ public class MultiplayerService {
     }
 
     private void distributePrizes(MultiplayerRoom room, String winningTeam) {
-        if (room.getTotalPrizePool() <= 0) return;
-
         List<RoomPlayer> winners = room.getPlayers().stream()
                 .filter(p -> winningTeam.equalsIgnoreCase(p.getTeam()))
                 .collect(Collectors.toList());
+
+        List<RoomPlayer> losers = room.getPlayers().stream()
+                .filter(p -> !winningTeam.equalsIgnoreCase(p.getTeam()))
+                .collect(Collectors.toList());
+
+        for (RoomPlayer lp : losers) {
+            coinWalletService.recordGameLoss(lp.getPlayerId());
+        }
 
         if (winners.isEmpty()) {
             refundPrizePool(room);
             return;
         }
 
-        long share = room.getTotalPrizePool() / winners.size();
+        long share = (room.getTotalPrizePool() > 0) ? (room.getTotalPrizePool() / winners.size()) : 0;
         for (RoomPlayer wp : winners) {
-            Player p = playerRepository.findById(wp.getPlayerId()).orElse(null);
+            // Award base Team Battle win reward (150 coins + streak check)
+            coinWalletService.recordGameResult(wp.getPlayerId(), true, false, "TEAM_BATTLE", room.getId());
+
+            // If there was a stake pool, award the player's share
+            if (share > 0) {
+                Player p = playerRepository.findById(wp.getPlayerId()).orElse(null);
+                if (p != null) {
+                    long newBalance = p.getVirtualCoins() + share;
+                    p.setVirtualCoins(newBalance);
+                    playerRepository.save(p);
+
+                    CoinTransaction tx = new CoinTransaction(
+                            p.getId(),
+                            p.getUsername(),
+                            share,
+                            "MATCH_WIN",
+                            room.getId(),
+                            "Stake prize pool share for winning match " + room.getRoomCode() + " with " + winningTeam,
+                            newBalance
+                    );
+                    coinTransactionRepository.save(tx);
+                }
+            }
+        }
+    }
+
+    private void distributePrizes(MultiplayerRoom room, RoomPlayer winner) {
+        if (winner == null) {
+            refundPrizePool(room);
+            return;
+        }
+
+        // Reset streak for losers
+        for (RoomPlayer rp : room.getPlayers()) {
+            if (!rp.getPlayerId().equals(winner.getPlayerId())) {
+                coinWalletService.recordGameLoss(rp.getPlayerId());
+            }
+        }
+
+        // Award base Quick Match win reward (100 coins + streak check)
+        coinWalletService.recordGameResult(winner.getPlayerId(), true, false, "QUICK_MATCH", room.getId());
+
+        // If there was a stake pool, award the total prize pool
+        if (room.getTotalPrizePool() > 0) {
+            Player p = playerRepository.findById(winner.getPlayerId()).orElse(null);
             if (p != null) {
-                long newBalance = p.getVirtualCoins() + share;
+                long newBalance = p.getVirtualCoins() + room.getTotalPrizePool();
                 p.setVirtualCoins(newBalance);
                 playerRepository.save(p);
 
                 CoinTransaction tx = new CoinTransaction(
                         p.getId(),
                         p.getUsername(),
-                        share,
+                        room.getTotalPrizePool(),
                         "MATCH_WIN",
                         room.getId(),
-                        "Prize reward for winning match " + room.getRoomCode() + " with " + winningTeam,
+                        "Stake prize pool for winning match " + room.getRoomCode(),
                         newBalance
                 );
                 coinTransactionRepository.save(tx);
             }
-        }
-    }
-
-    private void distributePrizes(MultiplayerRoom room, RoomPlayer winner) {
-        if (room.getTotalPrizePool() <= 0 || winner == null) return;
-
-        Player p = playerRepository.findById(winner.getPlayerId()).orElse(null);
-        if (p != null) {
-            long newBalance = p.getVirtualCoins() + room.getTotalPrizePool();
-            p.setVirtualCoins(newBalance);
-            playerRepository.save(p);
-
-            CoinTransaction tx = new CoinTransaction(
-                    p.getId(),
-                    p.getUsername(),
-                    room.getTotalPrizePool(),
-                    "MATCH_WIN",
-                    room.getId(),
-                    "Prize reward for winning match " + room.getRoomCode(),
-                    newBalance
-            );
-            coinTransactionRepository.save(tx);
         }
     }
 
@@ -856,42 +887,20 @@ public class MultiplayerService {
     @Transactional
     public Map<String, Object> getPlayerCoins(Long playerId) {
         Player player = resolvePlayer(playerId);
-
         List<CoinTransaction> txs = coinTransactionRepository.findByPlayerIdOrderByCreatedAtDesc(player.getId());
 
         Map<String, Object> res = new HashMap<>();
         res.put("playerId", player.getId());
         res.put("username", player.getUsername());
         res.put("virtualCoins", player.getVirtualCoins());
+        res.put("consecutiveWins", player.getConsecutiveWins());
         res.put("transactions", txs);
         return res;
     }
 
     @Transactional
     public Map<String, Object> claimDailyBonus(Long playerId) {
-        Player player = resolvePlayer(playerId);
-
-        long bonus = 250L;
-        long newBalance = player.getVirtualCoins() + bonus;
-        player.setVirtualCoins(newBalance);
-        playerRepository.save(player);
-
-        CoinTransaction tx = new CoinTransaction(
-                player.getId(),
-                player.getUsername(),
-                bonus,
-                "DAILY_BONUS",
-                null,
-                "Daily virtual coin refill bonus",
-                newBalance
-        );
-        coinTransactionRepository.save(tx);
-
-        Map<String, Object> res = new HashMap<>();
-        res.put("success", true);
-        res.put("virtualCoins", newBalance);
-        res.put("message", "Claimed 250 virtual coins!");
-        return res;
+        return coinWalletService.claimDailyLogin(playerId);
     }
 
     @Transactional(readOnly = true)

@@ -44,6 +44,9 @@ public class Game {
     @Column(nullable = false)
     private int score = 0;
 
+    @Column(name = "level")
+    private Integer level;
+
     @Column(nullable = false, length = 20)
     private String status = "IN_PROGRESS"; // IN_PROGRESS, WON, LOST
 
@@ -244,5 +247,13 @@ public class Game {
 
     public void setEmpFreezeUsed(boolean empFreezeUsed) {
         this.empFreezeUsed = empFreezeUsed;
+    }
+
+    public Integer getLevel() {
+        return level;
+    }
+
+    public void setLevel(Integer level) {
+        this.level = level;
     }
 }

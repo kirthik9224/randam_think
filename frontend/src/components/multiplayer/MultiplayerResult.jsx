@@ -1,8 +1,10 @@
 import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import sounds from '../../utils/soundEffects';
 
 const MultiplayerResult = ({ room, currentUserId, onReturnToHub }) => {
+  const navigate = useNavigate();
   const isTeamBattle = room.matchType === 'TEAM_BATTLE';
   const isWinner = isTeamBattle
     ? (room.matchWinningTeam === 'TEAM_RED' && room.players.find((p) => p.playerId === currentUserId)?.team === 'TEAM_RED') ||
@@ -57,10 +59,21 @@ const MultiplayerResult = ({ room, currentUserId, onReturnToHub }) => {
             </div>
           )}
 
-          {room.totalPrizePool > 0 && (
+          {isWinner && (
+            <div className="mt-3 pt-3 border-top border-secondary text-warning fw-bold">
+              <span className="mp-coin-badge fs-6 d-inline-flex align-items-center gap-1.5">
+                <span>🪙</span>
+                <span>
+                  {isTeamBattle ? '+150 Team Battle Victory Coins Awarded!' : '+100 Quick Match Victory Coins Awarded!'}
+                </span>
+                {room.totalPrizePool > 0 && <span>(+ Stake Share)</span>}
+              </span>
+            </div>
+          )}
+          {!isWinner && room.totalPrizePool > 0 && (
             <div className="mt-3 pt-3 border-top border-secondary">
               <span className="mp-coin-badge fs-6">
-                🪙 Prize Pool: {room.totalPrizePool} Coins {isWinner ? '(You Won Your Share!)' : ''}
+                🪙 Total Prize Pool: {room.totalPrizePool} Coins
               </span>
             </div>
           )}
@@ -112,6 +125,15 @@ const MultiplayerResult = ({ room, currentUserId, onReturnToHub }) => {
             }}
           >
             Return to Multiplayer Hub 🏠
+          </button>
+          <button
+            className="btn btn-outline-warning py-2 rounded-pill fw-bold"
+            onClick={() => {
+              sounds.playClick();
+              navigate('/wallet');
+            }}
+          >
+            🪙 Open Coin Wallet & Shop
           </button>
         </div>
       </div>

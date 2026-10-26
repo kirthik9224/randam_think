@@ -28,13 +28,16 @@ public class GameService {
     private final GameRepository gameRepository;
     private final GuessRepository guessRepository;
     private final PlayerRepository playerRepository;
+    private final CoinWalletService coinWalletService;
     private final SecureRandom random = new SecureRandom();
 
     @Autowired
-    public GameService(GameRepository gameRepository, GuessRepository guessRepository, PlayerRepository playerRepository) {
+    public GameService(GameRepository gameRepository, GuessRepository guessRepository,
+                       PlayerRepository playerRepository, CoinWalletService coinWalletService) {
         this.gameRepository = gameRepository;
         this.guessRepository = guessRepository;
         this.playerRepository = playerRepository;
+        this.coinWalletService = coinWalletService;
     }
 
     @Transactional
@@ -116,6 +119,9 @@ public class GameService {
         int secretNumber = random.nextInt(maxNumber - minNumber + 1) + minNumber;
 
         Game game = new Game(player, diff, mode, playerMode, minNumber, maxNumber, secretNumber, attemptsAllowed);
+        if (request.getLevel() != null && request.getLevel() > 0) {
+            game.setLevel(request.getLevel());
+        }
         Game saved = gameRepository.save(game);
 
         return mapToGameResponse(saved);
@@ -173,6 +179,7 @@ public class GameService {
         String result;
         String message;
         boolean gameOver = false;
+        Map<String, Object> rewardResult = null;
 
         if (guessNum == secret) {
             result = "CORRECT";
@@ -182,6 +189,8 @@ public class GameService {
             int calculatedScore = calculateScore(game);
             game.setScore(calculatedScore);
             gameOver = true;
+            boolean isLevelClear = game.getLevel() != null && game.getLevel() > 0;
+            rewardResult = coinWalletService.recordGameResult(game.getPlayer().getId(), true, isLevelClear, "SOLO", null);
         } else if (guessNum < secret) {
             result = "TOO_LOW";
             if (attemptsUsed >= game.getAttemptsAllowed()) {
@@ -190,6 +199,7 @@ public class GameService {
                 game.setScore(0);
                 game.setCompletedAt(LocalDateTime.now());
                 gameOver = true;
+                coinWalletService.recordGameLoss(game.getPlayer().getId());
             } else {
                 if ("HOT_COLD".equals(mode)) {
                     message = formatHotColdMessage(proximity, true);
@@ -209,6 +219,7 @@ public class GameService {
                 game.setScore(0);
                 game.setCompletedAt(LocalDateTime.now());
                 gameOver = true;
+                coinWalletService.recordGameLoss(game.getPlayer().getId());
             } else {
                 if ("HOT_COLD".equals(mode)) {
                     message = formatHotColdMessage(proximity, false);
@@ -228,7 +239,7 @@ public class GameService {
 
         int remaining = Math.max(0, game.getAttemptsAllowed() - attemptsUsed);
 
-        return new GuessResponse(
+        GuessResponse resp = new GuessResponse(
                 result,
                 message,
                 attemptsUsed,
@@ -245,6 +256,18 @@ public class GameService {
                 extraClue,
                 distance
         );
+
+        if (rewardResult != null) {
+            resp.setCoinsEarned((Long) rewardResult.get("coinsEarned"));
+            resp.setVirtualCoins((Long) rewardResult.get("virtualCoins"));
+            resp.setConsecutiveWins((Integer) rewardResult.get("consecutiveWins"));
+            resp.setCoinRewardMessage((String) rewardResult.get("message"));
+        } else if (game.getPlayer() != null) {
+            resp.setVirtualCoins(game.getPlayer().getVirtualCoins());
+            resp.setConsecutiveWins(game.getPlayer().getConsecutiveWins());
+        }
+
+        return resp;
     }
 
     private String formatHotColdMessage(String proximity, boolean aimHigher) {
@@ -349,7 +372,7 @@ public class GameService {
                 "Congratulations! You won with a score of " + game.getScore() :
                 "Game Over! Better luck next time.";
 
-        return new GameResultResponse(
+        GameResultResponse res = new GameResultResponse(
                 game.getId(),
                 game.getStatus(),
                 game.getDifficulty(),
@@ -362,6 +385,11 @@ public class GameService {
                 msg,
                 game.getCompletedAt()
         );
+        if (game.getPlayer() != null) {
+            res.setVirtualCoins(game.getPlayer().getVirtualCoins());
+            res.setConsecutiveWins(game.getPlayer().getConsecutiveWins());
+        }
+        return res;
     }
 
     private int calculateScore(Game game) {

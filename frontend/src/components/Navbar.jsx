@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import authService from '../services/authService';
+import coinWalletService from '../services/coinWalletService';
 import sounds from '../utils/soundEffects';
 
 const Navbar = ({ darkMode, toggleDarkMode, soundEnabled, toggleSound }) => {
@@ -13,6 +14,40 @@ const Navbar = ({ darkMode, toggleDarkMode, soundEnabled, toggleSound }) => {
   const [reducedMotion, setReducedMotion] = useState(() => {
     return localStorage.getItem('rtg_reduced_motion') === 'true';
   });
+
+  const [coins, setCoins] = useState(() => {
+    try {
+      const u = authService.getCurrentUser();
+      return u?.virtualCoins ?? 1000;
+    } catch (e) {
+      return 1000;
+    }
+  });
+
+  useEffect(() => {
+    const handleWalletUpdate = (e) => {
+      if (e?.detail?.coins !== undefined) {
+        setCoins(e.detail.coins);
+      }
+    };
+    window.addEventListener('rtg-wallet-updated', handleWalletUpdate);
+
+    const fetchBalance = async () => {
+      try {
+        const data = await coinWalletService.getWallet();
+        if (data?.virtualCoins !== undefined) {
+          setCoins(data.virtualCoins);
+        }
+      } catch (e) {
+        // silent fallback
+      }
+    };
+    fetchBalance();
+
+    return () => {
+      window.removeEventListener('rtg-wallet-updated', handleWalletUpdate);
+    };
+  }, []);
 
   const handleLogout = async () => {
     sounds.playClick();
@@ -81,6 +116,12 @@ const Navbar = ({ darkMode, toggleDarkMode, soundEnabled, toggleSound }) => {
               </li>
 
               <li className="nav-item">
+                <Link className={`nav-link text-nowrap ${isActive('/wallet')}`} to="/wallet">
+                  <i className="bi bi-wallet2 text-warning me-1"></i> Wallet & Shop
+                </Link>
+              </li>
+
+              <li className="nav-item">
                 <Link className={`nav-link text-nowrap ${isActive('/history')}`} to="/history">
                   <i className="bi bi-bar-chart-fill me-1"></i> Stats
                 </Link>
@@ -116,6 +157,17 @@ const Navbar = ({ darkMode, toggleDarkMode, soundEnabled, toggleSound }) => {
             </ul>
 
             <div className="d-flex align-items-center gap-2 flex-wrap flex-lg-nowrap ms-lg-auto mt-2 mt-lg-0">
+              {/* Virtual Coin Balance Pill */}
+              <Link
+                to="/wallet"
+                className="btn btn-sm btn-dark border-warning border-opacity-50 text-warning rounded-pill d-flex align-items-center gap-1.5 px-3 py-1 shadow-xs text-decoration-none flex-shrink-0"
+                title="Open Coin Wallet & Shop"
+                style={{ background: 'rgba(245, 158, 11, 0.12)' }}
+              >
+                <span>🪙</span>
+                <span className="fw-bold font-monospace">{coins.toLocaleString()}</span>
+              </Link>
+
               {/* Sound Toggle */}
               <button
                 onClick={() => {

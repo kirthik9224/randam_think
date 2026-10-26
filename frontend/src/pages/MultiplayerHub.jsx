@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 import multiplayerService from '../services/multiplayerService';
+import coinWalletService from '../services/coinWalletService';
 import TeamLeaderboard from '../components/multiplayer/TeamLeaderboard';
 import sounds from '../utils/soundEffects';
 import '../styles/Multiplayer.css';
@@ -47,7 +48,15 @@ const MultiplayerHub = () => {
   useEffect(() => {
     initSession();
 
+    const handleWalletUpdate = (e) => {
+      if (e?.detail?.coins !== undefined) {
+        setCoins(e.detail.coins);
+      }
+    };
+    window.addEventListener('rtg-wallet-updated', handleWalletUpdate);
+
     return () => {
+      window.removeEventListener('rtg-wallet-updated', handleWalletUpdate);
       cleanupMatchmaking();
     };
   }, []);
@@ -65,7 +74,7 @@ const MultiplayerHub = () => {
 
   const fetchCoins = async () => {
     try {
-      const data = await multiplayerService.getPlayerCoins();
+      const data = await coinWalletService.getWallet();
       if (data && data.virtualCoins !== undefined) {
         setCoins(data.virtualCoins);
       }
@@ -79,12 +88,15 @@ const MultiplayerHub = () => {
     try {
       setLoading(true);
       setErrorMsg('');
-      const res = await multiplayerService.claimDailyBonus();
+      const res = await coinWalletService.claimDailyLogin();
       setCoins(res.virtualCoins);
+      sounds.playPowerUp();
       setSuccessMsg(res.message);
-      setTimeout(() => setSuccessMsg(''), 3000);
+      setTimeout(() => setSuccessMsg(''), 4000);
     } catch (e) {
+      sounds.playError();
       setErrorMsg(e.message || 'Could not claim daily bonus');
+      setTimeout(() => setErrorMsg(''), 4000);
     } finally {
       setLoading(false);
     }
@@ -286,17 +298,29 @@ const MultiplayerHub = () => {
               </p>
             </div>
 
-            <div className="d-flex align-items-center gap-3">
-              <div className="mp-coin-badge fs-5">
+            <div className="d-flex align-items-center gap-2 flex-wrap">
+              <div
+                className="mp-coin-badge fs-5"
+                style={{ cursor: 'pointer' }}
+                onClick={() => navigate('/wallet')}
+                title="Click to view Coin Wallet & Shop"
+              >
                 <span>🪙</span>
                 <span>{coins.toLocaleString()} Coins</span>
               </div>
               <button
-                className="btn btn-warning rounded-pill px-3 py-2 fw-bold text-dark shadow-sm"
+                className="btn btn-warning rounded-pill px-3 py-2 fw-bold text-dark shadow-sm d-flex align-items-center gap-1.5"
                 onClick={handleClaimBonus}
                 disabled={loading}
               >
-                +250 Free Bonus
+                <span>🎁</span> +50 Daily Login
+              </button>
+              <button
+                className="btn btn-outline-info rounded-pill px-3 py-2 fw-bold shadow-sm d-flex align-items-center gap-1.5"
+                onClick={() => navigate('/wallet')}
+              >
+                <i className="bi bi-wallet2"></i>
+                <span>Wallet & Shop</span>
               </button>
             </div>
           </div>

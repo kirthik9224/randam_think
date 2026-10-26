@@ -21,6 +21,7 @@ import { getSelectedPin, applyThemeClass } from '../utils/themeHelper';
 import { recordDailyChallengeResult } from '../utils/dailyChallengeHelper';
 import { getDifficultyConfig, formatRange } from '../utils/gameConfig';
 import { getLevelConfig, completeLevel } from '../utils/levelProgression';
+import coinWalletService from '../services/coinWalletService';
 import '../styles/Game.css';
 import '../styles/Themes.css';
 
@@ -554,6 +555,10 @@ const Game = () => {
         const stars = levelProgResult ? levelProgResult.stars : (isWin ? (response.attemptsUsed <= 3 ? 3 : response.attemptsUsed <= 5 ? 2 : 1) : 0);
         const nextLevelNum = levelProgResult?.nextLevel || (gameLevel + 1);
 
+        if (response.virtualCoins !== undefined) {
+          coinWalletService.syncUserCoins(response.virtualCoins);
+        }
+
         setFinalResult({
           gameId: game.gameId,
           status: response.status,
@@ -564,6 +569,10 @@ const Game = () => {
           nextLevel: nextLevelNum,
           unlockedNext: levelProgResult?.unlockedNext ?? false,
           stars,
+          coinsEarned: response.coinsEarned,
+          virtualCoins: response.virtualCoins,
+          consecutiveWins: response.consecutiveWins,
+          coinRewardMessage: response.coinRewardMessage,
           secretNumber: response.secretNumber || num,
           winningGuess: num,
           winner: isWin ? contender : null,

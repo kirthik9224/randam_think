@@ -15,6 +15,10 @@ public class GameResultResponse {
     private Long timeTakenSeconds;
     private String message;
     private LocalDateTime completedAt;
+    private Long coinsEarned;
+    private Long virtualCoins;
+    private Integer consecutiveWins;
+    private String coinRewardMessage;
 
     public GameResultResponse() {
     }
@@ -133,5 +137,37 @@ public class GameResultResponse {
 
     public void setCompletedAt(LocalDateTime completedAt) {
         this.completedAt = completedAt;
+    }
+
+    public Long getCoinsEarned() {
+        return coinsEarned;
+    }
+
+    public void setCoinsEarned(Long coinsEarned) {
+        this.coinsEarned = coinsEarned;
+    }
+
+    public Long getVirtualCoins() {
+        return virtualCoins;
+    }
+
+    public void setVirtualCoins(Long virtualCoins) {
+        this.virtualCoins = virtualCoins;
+    }
+
+    public Integer getConsecutiveWins() {
+        return consecutiveWins;
+    }
+
+    public void setConsecutiveWins(Integer consecutiveWins) {
+        this.consecutiveWins = consecutiveWins;
+    }
+
+    public String getCoinRewardMessage() {
+        return coinRewardMessage;
+    }
+
+    public void setCoinRewardMessage(String coinRewardMessage) {
+        this.coinRewardMessage = coinRewardMessage;
     }
 }

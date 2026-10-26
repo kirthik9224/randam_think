@@ -1,6 +1,7 @@
 package com.randomthinkinggame.entity;
 
 import jakarta.persistence.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +31,18 @@ public class Player {
 
     @Column(name = "virtual_coins", nullable = false)
     private long virtualCoins = 1000L;
+
+    @Column(name = "consecutive_wins", nullable = false)
+    private int consecutiveWins = 0;
+
+    @Column(name = "last_daily_login_date")
+    private LocalDate lastDailyLoginDate;
+
+    @Column(name = "last_daily_challenge_date")
+    private LocalDate lastDailyChallengeDate;
+
+    @Column(name = "unlocked_items", length = 1000)
+    private String unlockedItems = "theme_default,avatar_default";
 
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Game> games = new ArrayList<>();
@@ -107,5 +120,37 @@ public class Player {
 
     public void setGames(List<Game> games) {
         this.games = games;
+    }
+
+    public int getConsecutiveWins() {
+        return consecutiveWins;
+    }
+
+    public void setConsecutiveWins(int consecutiveWins) {
+        this.consecutiveWins = consecutiveWins;
+    }
+
+    public LocalDate getLastDailyLoginDate() {
+        return lastDailyLoginDate;
+    }
+
+    public void setLastDailyLoginDate(LocalDate lastDailyLoginDate) {
+        this.lastDailyLoginDate = lastDailyLoginDate;
+    }
+
+    public LocalDate getLastDailyChallengeDate() {
+        return lastDailyChallengeDate;
+    }
+
+    public void setLastDailyChallengeDate(LocalDate lastDailyChallengeDate) {
+        this.lastDailyChallengeDate = lastDailyChallengeDate;
+    }
+
+    public String getUnlockedItems() {
+        return unlockedItems;
+    }
+
+    public void setUnlockedItems(String unlockedItems) {
+        this.unlockedItems = unlockedItems;
     }
 }
