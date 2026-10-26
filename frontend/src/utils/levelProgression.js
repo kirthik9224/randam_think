@@ -139,11 +139,23 @@ export const LEVELS = [
   },
 ];
 
-const STORAGE_KEY = 'rtg_level_progress';
+const getStorageKey = () => {
+  try {
+    const raw = localStorage.getItem('rtg_user');
+    if (raw) {
+      const user = JSON.parse(raw);
+      if (user && (user.id || user.username)) {
+        return `rtg_level_progress_${user.id || user.username}`;
+      }
+    }
+  } catch (e) {}
+  return 'rtg_level_progress';
+};
 
 export const getLevelProgression = () => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const key = getStorageKey();
+    const raw = localStorage.getItem(key);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed.unlockedLevel === 'number') {
@@ -170,7 +182,8 @@ export const getLevelProgression = () => {
 
 export const saveLevelProgression = (progress) => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+    const key = getStorageKey();
+    localStorage.setItem(key, JSON.stringify(progress));
   } catch (e) {
     console.warn('Error saving level progression:', e);
   }
