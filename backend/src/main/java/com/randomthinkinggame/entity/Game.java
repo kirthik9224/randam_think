@@ -27,13 +27,13 @@ public class Game {
     private String playerMode = "SOLO"; // SOLO, 1_VS_CPU, 1P_VS_1P, 2P_VS_2CPU, 2P_VS_2P, 3P_VS_1CPU, 4P_FFA, 4P_VS_4P
 
     @Column(name = "min_number", nullable = false)
-    private int minNumber;
+    private long minNumber;
 
     @Column(name = "max_number", nullable = false)
-    private int maxNumber;
+    private long maxNumber;
 
     @Column(name = "secret_number", nullable = false)
-    private int secretNumber;
+    private long secretNumber;
 
     @Column(name = "attempts_allowed", nullable = false)
     private int attemptsAllowed;
@@ -74,15 +74,15 @@ public class Game {
     public Game() {
     }
 
-    public Game(Player player, String difficulty, int minNumber, int maxNumber, int secretNumber, int attemptsAllowed) {
+    public Game(Player player, String difficulty, long minNumber, long maxNumber, long secretNumber, int attemptsAllowed) {
         this(player, difficulty, "CLASSIC", "SOLO", minNumber, maxNumber, secretNumber, attemptsAllowed);
     }
 
-    public Game(Player player, String difficulty, String gameMode, int minNumber, int maxNumber, int secretNumber, int attemptsAllowed) {
+    public Game(Player player, String difficulty, String gameMode, long minNumber, long maxNumber, long secretNumber, int attemptsAllowed) {
         this(player, difficulty, gameMode, "SOLO", minNumber, maxNumber, secretNumber, attemptsAllowed);
     }
 
-    public Game(Player player, String difficulty, String gameMode, String playerMode, int minNumber, int maxNumber, int secretNumber, int attemptsAllowed) {
+    public Game(Player player, String difficulty, String gameMode, String playerMode, long minNumber, long maxNumber, long secretNumber, int attemptsAllowed) {
         this.player = player;
         this.difficulty = difficulty;
         this.gameMode = gameMode != null ? gameMode : "CLASSIC";
@@ -137,27 +137,27 @@ public class Game {
         this.playerMode = playerMode;
     }
 
-    public int getMinNumber() {
+    public long getMinNumber() {
         return minNumber;
     }
 
-    public void setMinNumber(int minNumber) {
+    public void setMinNumber(long minNumber) {
         this.minNumber = minNumber;
     }
 
-    public int getMaxNumber() {
+    public long getMaxNumber() {
         return maxNumber;
     }
 
-    public void setMaxNumber(int maxNumber) {
+    public void setMaxNumber(long maxNumber) {
         this.maxNumber = maxNumber;
     }
 
-    public int getSecretNumber() {
+    public long getSecretNumber() {
         return secretNumber;
     }
 
-    public void setSecretNumber(int secretNumber) {
+    public void setSecretNumber(long secretNumber) {
         this.secretNumber = secretNumber;
     }
 

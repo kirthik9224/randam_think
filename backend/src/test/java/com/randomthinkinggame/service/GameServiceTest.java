@@ -84,12 +84,12 @@ public class GameServiceTest {
 
         // Under min
         assertThrows(BadRequestException.class, () -> {
-            gameService.makeGuess(gameResp.getGameId(), new GuessRequest(0));
+            gameService.makeGuess(gameResp.getGameId(), new GuessRequest(0L));
         });
 
         // Over max
         assertThrows(BadRequestException.class, () -> {
-            gameService.makeGuess(gameResp.getGameId(), new GuessRequest(101));
+            gameService.makeGuess(gameResp.getGameId(), new GuessRequest(101L));
         });
     }
 
@@ -101,7 +101,7 @@ public class GameServiceTest {
 
         // Find a wrong guess first
         Game game = gameRepository.findById(gameResp.getGameId()).orElseThrow();
-        int wrongGuess = game.getSecretNumber() == 50 ? 49 : 50;
+        long wrongGuess = game.getSecretNumber() == 50L ? 49L : 50L;
 
         GuessResponse firstGuess = gameService.makeGuess(gameResp.getGameId(), new GuessRequest(wrongGuess));
         assertNotNull(firstGuess);
@@ -120,7 +120,7 @@ public class GameServiceTest {
         GameResponse gameResp = gameService.startGame(startReq);
 
         Game game = gameRepository.findById(gameResp.getGameId()).orElseThrow();
-        int secret = game.getSecretNumber();
+        long secret = game.getSecretNumber();
 
         GuessResponse guessResp = gameService.makeGuess(gameResp.getGameId(), new GuessRequest(secret));
 
@@ -163,7 +163,7 @@ public class GameServiceTest {
         GameResponse gameResp = gameService.startGame(startReq);
 
         Game game = gameRepository.findById(gameResp.getGameId()).orElseThrow();
-        int secret = game.getSecretNumber();
+        long secret = game.getSecretNumber();
 
         // Win the game
         gameService.makeGuess(gameResp.getGameId(), new GuessRequest(secret));

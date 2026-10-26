@@ -16,7 +16,7 @@ public class Guess {
     private Game game;
 
     @Column(name = "guess_number", nullable = false)
-    private int guessNumber;
+    private long guessNumber;
 
     @Column(nullable = false, length = 20)
     private String result; // TOO_LOW, TOO_HIGH, CORRECT
@@ -30,7 +30,7 @@ public class Guess {
     public Guess() {
     }
 
-    public Guess(Game game, int guessNumber, String result, int attemptNumber) {
+    public Guess(Game game, long guessNumber, String result, int attemptNumber) {
         this.game = game;
         this.guessNumber = guessNumber;
         this.result = result;
@@ -54,11 +54,11 @@ public class Guess {
         this.game = game;
     }
 
-    public int getGuessNumber() {
+    public long getGuessNumber() {
         return guessNumber;
     }
 
-    public void setGuessNumber(int guessNumber) {
+    public void setGuessNumber(long guessNumber) {
         this.guessNumber = guessNumber;
     }
 

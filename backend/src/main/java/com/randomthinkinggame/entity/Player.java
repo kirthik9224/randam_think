@@ -44,6 +44,21 @@ public class Player {
     @Column(name = "unlocked_items", length = 1000)
     private String unlockedItems = "theme_default,avatar_default";
 
+    @Column(name = "highest_unlocked_level", nullable = false)
+    private int highestUnlockedLevel = 1;
+
+    @Column(name = "current_solo_level", nullable = false)
+    private int currentSoloLevel = 1;
+
+    @Column(name = "solo_xp", nullable = false)
+    private long soloXp = 0L;
+
+    @Column(name = "solo_stars", nullable = false)
+    private int soloStars = 0;
+
+    @Column(name = "milestone_badges", length = 2000)
+    private String milestoneBadges = "BEGINNER_INITIATE";
+
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Game> games = new ArrayList<>();
 
@@ -152,5 +167,45 @@ public class Player {
 
     public void setUnlockedItems(String unlockedItems) {
         this.unlockedItems = unlockedItems;
+    }
+
+    public int getHighestUnlockedLevel() {
+        return Math.max(1, highestUnlockedLevel);
+    }
+
+    public void setHighestUnlockedLevel(int highestUnlockedLevel) {
+        this.highestUnlockedLevel = highestUnlockedLevel;
+    }
+
+    public int getCurrentSoloLevel() {
+        return Math.max(1, currentSoloLevel);
+    }
+
+    public void setCurrentSoloLevel(int currentSoloLevel) {
+        this.currentSoloLevel = currentSoloLevel;
+    }
+
+    public long getSoloXp() {
+        return soloXp;
+    }
+
+    public void setSoloXp(long soloXp) {
+        this.soloXp = soloXp;
+    }
+
+    public int getSoloStars() {
+        return soloStars;
+    }
+
+    public void setSoloStars(int soloStars) {
+        this.soloStars = soloStars;
+    }
+
+    public String getMilestoneBadges() {
+        return milestoneBadges != null ? milestoneBadges : "BEGINNER_INITIATE";
+    }
+
+    public void setMilestoneBadges(String milestoneBadges) {
+        this.milestoneBadges = milestoneBadges;
     }
 }

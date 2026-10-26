@@ -57,7 +57,7 @@ public class MultiplayerRoom {
     private int currentRoundNumber = 1;
 
     @Column(name = "total_rounds", nullable = false)
-    private int totalRounds = 3;
+    private int totalRounds = 10;
 
     @Column(name = "secret_number", nullable = false)
     private long secretNumber;

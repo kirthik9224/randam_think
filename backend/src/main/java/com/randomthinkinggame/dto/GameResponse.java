@@ -11,12 +11,13 @@ public class GameResponse {
     private String difficulty;
     private String gameMode = "CLASSIC";
     private String playerMode = "SOLO";
-    private int minNumber;
-    private int maxNumber;
+    private long minNumber;
+    private long maxNumber;
     private int attemptsAllowed;
     private int attemptsUsed;
     private int attemptsRemaining;
     private int score;
+    private Integer level;
     private String status;
     private LocalDateTime startedAt;
     private LocalDateTime completedAt;
@@ -74,19 +75,19 @@ public class GameResponse {
         this.playerMode = playerMode;
     }
 
-    public int getMinNumber() {
+    public long getMinNumber() {
         return minNumber;
     }
 
-    public void setMinNumber(int minNumber) {
+    public void setMinNumber(long minNumber) {
         this.minNumber = minNumber;
     }
 
-    public int getMaxNumber() {
+    public long getMaxNumber() {
         return maxNumber;
     }
 
-    public void setMaxNumber(int maxNumber) {
+    public void setMaxNumber(long maxNumber) {
         this.maxNumber = maxNumber;
     }
 
@@ -120,6 +121,14 @@ public class GameResponse {
 
     public void setScore(int score) {
         this.score = score;
+    }
+
+    public Integer getLevel() {
+        return level;
+    }
+
+    public void setLevel(Integer level) {
+        this.level = level;
     }
 
     public String getStatus() {

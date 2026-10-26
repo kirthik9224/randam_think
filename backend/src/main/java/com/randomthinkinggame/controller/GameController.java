@@ -61,9 +61,35 @@ public class GameController {
     public ResponseEntity<Map<String, Object>> usePowerUp(
             @PathVariable Long gameId,
             @PathVariable String type,
-            @RequestParam(defaultValue = "1") int currentMin,
-            @RequestParam(defaultValue = "1000") int currentMax) {
+            @RequestParam(defaultValue = "1") long currentMin,
+            @RequestParam(defaultValue = "1000") long currentMax) {
         Map<String, Object> response = gameService.usePowerUp(gameId, type, currentMin, currentMax);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/levels/{levelNumber}")
+    public ResponseEntity<com.randomthinkinggame.config.SoloLevelConfig> getLevelConfig(@PathVariable int levelNumber) {
+        return ResponseEntity.ok(gameService.getLevelConfig(levelNumber));
+    }
+
+    @GetMapping("/levels/range")
+    public ResponseEntity<List<com.randomthinkinggame.config.SoloLevelConfig>> getLevelRange(
+            @RequestParam(defaultValue = "1") int start,
+            @RequestParam(defaultValue = "50") int count) {
+        return ResponseEntity.ok(gameService.getLevelRange(start, count));
+    }
+
+    @GetMapping("/levels/progress/{playerId}")
+    public ResponseEntity<Map<String, Object>> getLevelProgress(@PathVariable Long playerId) {
+        return ResponseEntity.ok(gameService.getPlayerLevelProgress(playerId));
+    }
+
+    @PostMapping("/levels/sync")
+    public ResponseEntity<Map<String, Object>> syncOfflineProgress(
+            @RequestParam(defaultValue = "999999") Long playerId,
+            @RequestParam(defaultValue = "1") int offlineUnlockedLevel,
+            @RequestParam(defaultValue = "0") int offlineStars,
+            @RequestParam(defaultValue = "0") long offlineXp) {
+        return ResponseEntity.ok(gameService.syncOfflineProgress(playerId, offlineUnlockedLevel, offlineStars, offlineXp));
     }
 }

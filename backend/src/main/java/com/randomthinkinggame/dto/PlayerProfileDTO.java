@@ -20,6 +20,11 @@ public class PlayerProfileDTO {
     private LocalDateTime createdAt;
     private long virtualCoins;
     private int consecutiveWins;
+    private int highestUnlockedLevel = 1;
+    private int currentSoloLevel = 1;
+    private long soloXp = 0L;
+    private int soloStars = 0;
+    private String milestoneBadges = "BEGINNER_INITIATE";
 
     public PlayerProfileDTO() {
     }
@@ -150,5 +155,45 @@ public class PlayerProfileDTO {
 
     public void setConsecutiveWins(int consecutiveWins) {
         this.consecutiveWins = consecutiveWins;
+    }
+
+    public int getHighestUnlockedLevel() {
+        return Math.max(1, highestUnlockedLevel);
+    }
+
+    public void setHighestUnlockedLevel(int highestUnlockedLevel) {
+        this.highestUnlockedLevel = highestUnlockedLevel;
+    }
+
+    public int getCurrentSoloLevel() {
+        return Math.max(1, currentSoloLevel);
+    }
+
+    public void setCurrentSoloLevel(int currentSoloLevel) {
+        this.currentSoloLevel = currentSoloLevel;
+    }
+
+    public long getSoloXp() {
+        return soloXp;
+    }
+
+    public void setSoloXp(long soloXp) {
+        this.soloXp = soloXp;
+    }
+
+    public int getSoloStars() {
+        return soloStars;
+    }
+
+    public void setSoloStars(int soloStars) {
+        this.soloStars = soloStars;
+    }
+
+    public String getMilestoneBadges() {
+        return milestoneBadges != null ? milestoneBadges : "BEGINNER_INITIATE";
+    }
+
+    public void setMilestoneBadges(String milestoneBadges) {
+        this.milestoneBadges = milestoneBadges;
     }
 }

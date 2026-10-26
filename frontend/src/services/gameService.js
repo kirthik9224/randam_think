@@ -126,6 +126,50 @@ export const gameService = {
       return offlineGameEngine.useOfflinePowerUp(gameId, type, currentMin, currentMax);
     }
   },
+
+  async getLevelConfig(levelNumber) {
+    try {
+      const response = await api.get(`/games/levels/${levelNumber}`);
+      return response.data;
+    } catch (err) {
+      console.warn('Backend getLevelConfig fallback:', err);
+      return null;
+    }
+  },
+
+  async getLevelRange(start = 1, count = 50) {
+    try {
+      const response = await api.get(`/games/levels/range?start=${start}&count=${count}`);
+      return response.data;
+    } catch (err) {
+      console.warn('Backend getLevelRange fallback:', err);
+      return [];
+    }
+  },
+
+  async getLevelProgress(playerId) {
+    try {
+      const targetId = playerId || 999999;
+      const response = await api.get(`/games/levels/progress/${targetId}`);
+      return response.data;
+    } catch (err) {
+      console.warn('Backend getLevelProgress fallback:', err);
+      return null;
+    }
+  },
+
+  async syncOfflineProgress(playerId, offlineUnlockedLevel, offlineStars = 0, offlineXp = 0) {
+    try {
+      const targetId = playerId || 999999;
+      const response = await api.post(
+        `/games/levels/sync?playerId=${targetId}&offlineUnlockedLevel=${offlineUnlockedLevel}&offlineStars=${offlineStars}&offlineXp=${offlineXp}`
+      );
+      return response.data;
+    } catch (err) {
+      console.warn('Backend syncOfflineProgress fallback:', err);
+      return null;
+    }
+  },
 };
 
 export default gameService;

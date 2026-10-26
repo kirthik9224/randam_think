@@ -29,15 +29,27 @@ public class GameService {
     private final GuessRepository guessRepository;
     private final PlayerRepository playerRepository;
     private final CoinWalletService coinWalletService;
+    private final SoloLevelConfigService soloLevelConfigService;
     private final SecureRandom random = new SecureRandom();
 
     @Autowired
     public GameService(GameRepository gameRepository, GuessRepository guessRepository,
-                       PlayerRepository playerRepository, CoinWalletService coinWalletService) {
+                       PlayerRepository playerRepository, CoinWalletService coinWalletService,
+                       SoloLevelConfigService soloLevelConfigService) {
         this.gameRepository = gameRepository;
         this.guessRepository = guessRepository;
         this.playerRepository = playerRepository;
         this.coinWalletService = coinWalletService;
+        this.soloLevelConfigService = soloLevelConfigService;
+    }
+
+    private long generateSecretNumber(long min, long max) {
+        if (min >= max) return min;
+        long range = max - min + 1;
+        long secret = min + (long)(random.nextDouble() * range);
+        if (secret > max) secret = max;
+        if (secret < min) secret = min;
+        return secret;
     }
 
     @Transactional
@@ -71,31 +83,43 @@ public class GameService {
             playerMode = "SOLO";
         }
 
-        int minNumber = request.getMinNumber() != null ? request.getMinNumber() : 1;
-        int maxNumber;
+        long minNumber = request.getMinNumber() != null ? request.getMinNumber() : 1L;
+        long maxNumber;
         int attemptsAllowed;
 
-        if (request.getMaxNumber() != null && request.getMaxNumber() > minNumber) {
+        if (request.getLevel() != null && request.getLevel() > 0) {
+            int requestedLevel = request.getLevel();
+            if (requestedLevel > player.getHighestUnlockedLevel()) {
+                throw new BadRequestException("Level " + requestedLevel + " is locked! Highest unlocked level is " + player.getHighestUnlockedLevel());
+            }
+            com.randomthinkinggame.config.SoloLevelConfig levelConfig = soloLevelConfigService.getLevelConfig(requestedLevel);
+            diff = levelConfig.getDifficulty();
+            minNumber = levelConfig.getMinNumber();
+            maxNumber = levelConfig.getMaxNumber();
+            attemptsAllowed = levelConfig.getAttemptsAllowed();
+            player.setCurrentSoloLevel(requestedLevel);
+            playerRepository.save(player);
+        } else if (request.getMaxNumber() != null && request.getMaxNumber() > minNumber) {
             maxNumber = request.getMaxNumber();
             attemptsAllowed = request.getAttemptsAllowed() != null ? request.getAttemptsAllowed() : 7;
         } else {
             switch (diff) {
                 case "EASY":
-                    maxNumber = 20;
+                    maxNumber = 20L;
                     attemptsAllowed = 10;
                     break;
                 case "HARD":
-                    maxNumber = 500;
+                    maxNumber = 500L;
                     attemptsAllowed = 5;
                     break;
                 case "EXPERT":
-                    maxNumber = 1000;
+                    maxNumber = 1000L;
                     attemptsAllowed = 3;
                     break;
                 case "MEDIUM":
                 default:
                     diff = "MEDIUM";
-                    maxNumber = 100;
+                    maxNumber = 100L;
                     attemptsAllowed = 7;
                     break;
             }
@@ -116,7 +140,7 @@ public class GameService {
                 break;
         }
 
-        int secretNumber = random.nextInt(maxNumber - minNumber + 1) + minNumber;
+        long secretNumber = generateSecretNumber(minNumber, maxNumber);
 
         Game game = new Game(player, diff, mode, playerMode, minNumber, maxNumber, secretNumber, attemptsAllowed);
         if (request.getLevel() != null && request.getLevel() > 0) {
@@ -136,7 +160,7 @@ public class GameService {
             throw new BadRequestException("Game is already finished with status: " + game.getStatus());
         }
 
-        int guessNum = request.getGuess();
+        long guessNum = request.getGuess();
         if (guessNum < game.getMinNumber() || guessNum > game.getMaxNumber()) {
             throw new BadRequestException("Guess must be between " + game.getMinNumber() + " and " + game.getMaxNumber() + ".");
         }
@@ -150,10 +174,10 @@ public class GameService {
         int attemptsUsed = game.getAttemptsUsed() + 1;
         game.setAttemptsUsed(attemptsUsed);
 
-        int secret = game.getSecretNumber();
+        long secret = game.getSecretNumber();
         String mode = game.getGameMode() != null ? game.getGameMode() : "CLASSIC";
-        int totalRange = Math.max(1, game.getMaxNumber() - game.getMinNumber());
-        int distance = Math.abs(guessNum - secret);
+        long totalRange = Math.max(1L, game.getMaxNumber() - game.getMinNumber());
+        long distance = Math.abs(guessNum - secret);
         double ratio = (double) distance / totalRange;
 
         String proximity;
@@ -191,6 +215,36 @@ public class GameService {
             gameOver = true;
             boolean isLevelClear = game.getLevel() != null && game.getLevel() > 0;
             rewardResult = coinWalletService.recordGameResult(game.getPlayer().getId(), true, isLevelClear, "SOLO", null);
+
+            if (isLevelClear) {
+                int wonLevel = game.getLevel();
+                com.randomthinkinggame.config.SoloLevelConfig cfg = soloLevelConfigService.getLevelConfig(wonLevel);
+                Player p = game.getPlayer();
+
+                // Add XP
+                p.setSoloXp(p.getSoloXp() + cfg.getXpReward());
+
+                // Calculate stars (1-3)
+                int stars = (attemptsUsed <= 2 || ((double) attemptsUsed / game.getAttemptsAllowed()) <= 0.35) ? 3
+                          : (attemptsUsed <= 4 || ((double) attemptsUsed / game.getAttemptsAllowed()) <= 0.65) ? 2 : 1;
+                p.setSoloStars(p.getSoloStars() + stars);
+
+                boolean nextUnlocked = false;
+                if (wonLevel >= p.getHighestUnlockedLevel() && wonLevel < SoloLevelConfigService.MAX_LEVEL) {
+                    p.setHighestUnlockedLevel(wonLevel + 1);
+                    p.setCurrentSoloLevel(wonLevel + 1);
+                    nextUnlocked = true;
+                }
+
+                if (cfg.getMilestoneBadge() != null && !cfg.getMilestoneBadge().isEmpty()) {
+                    String currentBadges = p.getMilestoneBadges();
+                    if (currentBadges == null) currentBadges = "";
+                    if (!currentBadges.contains(cfg.getMilestoneBadge())) {
+                        p.setMilestoneBadges(currentBadges.isEmpty() ? cfg.getMilestoneBadge() : currentBadges + "," + cfg.getMilestoneBadge());
+                    }
+                }
+                playerRepository.save(p);
+            }
         } else if (guessNum < secret) {
             result = "TOO_LOW";
             if (attemptsUsed >= game.getAttemptsAllowed()) {
@@ -267,6 +321,19 @@ public class GameService {
             resp.setConsecutiveWins(game.getPlayer().getConsecutiveWins());
         }
 
+        if (game.getLevel() != null && game.getLevel() > 0 && game.getPlayer() != null) {
+            Player p = game.getPlayer();
+            resp.setLevel(game.getLevel());
+            resp.setHighestUnlockedLevel(p.getHighestUnlockedLevel());
+            if ("WON".equals(game.getStatus())) {
+                com.randomthinkinggame.config.SoloLevelConfig cfg = soloLevelConfigService.getLevelConfig(game.getLevel());
+                resp.setNextLevelUnlocked(p.getHighestUnlockedLevel() > game.getLevel());
+                resp.setMilestoneBadgeEarned(cfg.getMilestoneBadge());
+                resp.setXpEarned(cfg.getXpReward());
+                resp.setTotalXp(p.getSoloXp());
+            }
+        }
+
         return resp;
     }
 
@@ -288,7 +355,7 @@ public class GameService {
         }
     }
 
-    private String generateDetectiveClue(int secret, int attempt, int min, int max) {
+    private String generateDetectiveClue(long secret, int attempt, long min, long max) {
         switch (attempt) {
             case 1:
                 return "🕵️ Clue #1: The secret number is " + (secret % 2 == 0 ? "EVEN." : "ODD.");
@@ -300,7 +367,7 @@ public class GameService {
                 if (isPrime(secret)) return "🕵️ Clue #2: The secret number is a PRIME number!";
                 return "🕵️ Clue #2: The secret number is NOT divisible by 3 or 5.";
             case 3:
-                int sum = 0, temp = secret;
+                long sum = 0, temp = secret;
                 while (temp > 0) {
                     sum += temp % 10;
                     temp /= 10;
@@ -309,17 +376,17 @@ public class GameService {
             case 4:
                 return "🕵️ Clue #4: The secret number ends with the digit " + (secret % 10) + ".";
             default:
-                int lowerTens = (secret / 10) * 10;
-                int upperTens = lowerTens + 9;
+                long lowerTens = (secret / 10) * 10;
+                long upperTens = lowerTens + 9;
                 return "🕵️ Clue #" + attempt + ": The secret number lies between " + Math.max(min, lowerTens) + " and " + Math.min(max, upperTens) + ".";
         }
     }
 
-    private boolean isPrime(int n) {
+    private boolean isPrime(long n) {
         if (n <= 1) return false;
         if (n <= 3) return true;
         if (n % 2 == 0 || n % 3 == 0) return false;
-        for (int i = 5; i * i <= n; i += 6) {
+        for (long i = 5; i * i <= n; i += 6) {
             if (n % i == 0 || n % (i + 2) == 0) return false;
         }
         return true;
@@ -444,7 +511,7 @@ public class GameService {
     }
 
     @Transactional
-    public Map<String, Object> usePowerUp(Long gameId, String type, int currentMin, int currentMax) {
+    public Map<String, Object> usePowerUp(Long gameId, String type, long currentMin, long currentMax) {
         Game game = gameRepository.findById(gameId)
                 .orElseThrow(() -> new ResourceNotFoundException("Game not found with ID: " + gameId));
 
@@ -452,7 +519,7 @@ public class GameService {
             throw new BadRequestException("Game is not in progress.");
         }
 
-        int secret = game.getSecretNumber();
+        long secret = game.getSecretNumber();
         Map<String, Object> result = new HashMap<>();
         result.put("powerUpType", type);
 
@@ -462,24 +529,24 @@ public class GameService {
                     throw new BadRequestException("Quantum Slice power-up has already been used in this game.");
                 }
                 game.setSlice50Used(true);
-                int min = Math.max(game.getMinNumber(), currentMin);
-                int max = Math.min(game.getMaxNumber(), currentMax);
-                int lowerFalseSpan = Math.max(0, secret - min);
-                int upperFalseSpan = Math.max(0, max - secret);
+                long min = Math.max(game.getMinNumber(), currentMin);
+                long max = Math.min(game.getMaxNumber(), currentMax);
+                long lowerFalseSpan = Math.max(0L, secret - min);
+                long upperFalseSpan = Math.max(0L, max - secret);
 
-                int newMin = min;
-                int newMax = max;
+                long newMin = min;
+                long newMax = max;
                 String slicedDirection;
-                int slicedCount;
+                long slicedCount;
 
                 if (upperFalseSpan >= lowerFalseSpan && upperFalseSpan > 1) {
                     slicedDirection = "UPPER";
-                    int cut = upperFalseSpan / 2;
+                    long cut = upperFalseSpan / 2;
                     newMax = max - cut;
                     slicedCount = cut;
                 } else if (lowerFalseSpan > 1) {
                     slicedDirection = "LOWER";
-                    int cut = lowerFalseSpan / 2;
+                    long cut = lowerFalseSpan / 2;
                     newMin = min + cut;
                     slicedCount = cut;
                 } else {
@@ -519,7 +586,7 @@ public class GameService {
                     clue += " It is a PRIME number!";
                 }
 
-                int sum = 0, temp = secret;
+                long sum = 0, temp = secret;
                 while (temp > 0) {
                     sum += temp % 10;
                     temp /= 10;
@@ -578,6 +645,7 @@ public class GameService {
         resp.setAttemptsUsed(game.getAttemptsUsed());
         resp.setAttemptsRemaining(Math.max(0, game.getAttemptsAllowed() - game.getAttemptsUsed()));
         resp.setScore(game.getScore());
+        resp.setLevel(game.getLevel());
         resp.setStatus(game.getStatus());
         resp.setStartedAt(game.getStartedAt());
         resp.setCompletedAt(game.getCompletedAt());
@@ -595,5 +663,68 @@ public class GameService {
         resp.setGuesses(guessDTOs);
 
         return resp;
+    }
+
+    public com.randomthinkinggame.config.SoloLevelConfig getLevelConfig(int level) {
+        return soloLevelConfigService.getLevelConfig(level);
+    }
+
+    public List<com.randomthinkinggame.config.SoloLevelConfig> getLevelRange(int start, int count) {
+        return soloLevelConfigService.getLevelRange(start, count);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getPlayerLevelProgress(Long playerId) {
+        Player player = null;
+        if (playerId != null && playerId > 0 && playerId != 999999L) {
+            player = playerRepository.findById(playerId).orElse(null);
+        }
+        if (player == null) {
+            player = playerRepository.findByEmail("guest@randomthinkinggame.local")
+                    .or(() -> playerRepository.findByUsername("Guest Explorer"))
+                    .orElse(null);
+        }
+
+        int unlocked = player != null ? player.getHighestUnlockedLevel() : 1;
+        int current = player != null ? player.getCurrentSoloLevel() : 1;
+        long xp = player != null ? player.getSoloXp() : 0L;
+        int stars = player != null ? player.getSoloStars() : 0;
+        String badges = player != null ? player.getMilestoneBadges() : "BEGINNER_INITIATE";
+
+        com.randomthinkinggame.config.SoloLevelConfig curConfig = soloLevelConfigService.getLevelConfig(unlocked);
+
+        int nextMilestone = ((unlocked / 50) + 1) * 50;
+        if (nextMilestone > SoloLevelConfigService.MAX_LEVEL) nextMilestone = SoloLevelConfigService.MAX_LEVEL;
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("playerId", player != null ? player.getId() : 999999L);
+        map.put("highestUnlockedLevel", unlocked);
+        map.put("currentSoloLevel", current);
+        map.put("soloXp", xp);
+        map.put("soloStars", stars);
+        map.put("milestoneBadges", badges);
+        map.put("completedLevelsCount", Math.max(0, unlocked - 1));
+        map.put("maxLevel", SoloLevelConfigService.MAX_LEVEL);
+        map.put("stage", curConfig.getStage());
+        map.put("stageName", curConfig.getStageName());
+        map.put("nextMilestoneLevel", nextMilestone);
+        map.put("currentLevelConfig", curConfig);
+        return map;
+    }
+
+    @Transactional
+    public Map<String, Object> syncOfflineProgress(Long playerId, int offlineUnlockedLevel, int offlineStars, long offlineXp) {
+        Player player = null;
+        if (playerId != null && playerId > 0 && playerId != 999999L) {
+            player = playerRepository.findById(playerId).orElse(null);
+        }
+        if (player != null) {
+            int newUnlocked = Math.max(player.getHighestUnlockedLevel(), Math.min(SoloLevelConfigService.MAX_LEVEL, offlineUnlockedLevel));
+            player.setHighestUnlockedLevel(newUnlocked);
+            if (offlineStars > player.getSoloStars()) player.setSoloStars(offlineStars);
+            if (offlineXp > player.getSoloXp()) player.setSoloXp(offlineXp);
+            playerRepository.save(player);
+        }
+        return getPlayerLevelProgress(playerId);
     }
 }

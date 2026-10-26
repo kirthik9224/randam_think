@@ -12,32 +12,38 @@ public class GuessResponse {
     private String status; // IN_PROGRESS, WON, LOST
     private Long gameId;
     private boolean gameOver;
-    private int guessNumber;
+    private long guessNumber;
     private int attemptNumber;
     private LocalDateTime createdAt;
     private String gameMode;
     private String proximity;
     private String extraClue;
-    private Integer distance;
+    private Long distance;
     private Long coinsEarned;
     private Long virtualCoins;
     private Integer consecutiveWins;
     private String coinRewardMessage;
+    private Integer level;
+    private Integer highestUnlockedLevel;
+    private boolean nextLevelUnlocked;
+    private String milestoneBadgeEarned;
+    private Integer xpEarned;
+    private Long totalXp;
 
     public GuessResponse() {
     }
 
     public GuessResponse(String result, String message, int attemptsUsed, int attemptsRemaining,
                          int score, String status, Long gameId, boolean gameOver,
-                         int guessNumber, int attemptNumber, LocalDateTime createdAt) {
+                         long guessNumber, int attemptNumber, LocalDateTime createdAt) {
         this(result, message, attemptsUsed, attemptsRemaining, score, status, gameId, gameOver,
                 guessNumber, attemptNumber, createdAt, "CLASSIC", null, null, null);
     }
 
     public GuessResponse(String result, String message, int attemptsUsed, int attemptsRemaining,
                          int score, String status, Long gameId, boolean gameOver,
-                         int guessNumber, int attemptNumber, LocalDateTime createdAt,
-                         String gameMode, String proximity, String extraClue, Integer distance) {
+                         long guessNumber, int attemptNumber, LocalDateTime createdAt,
+                         String gameMode, String proximity, String extraClue, Long distance) {
         this.result = result;
         this.message = message;
         this.attemptsUsed = attemptsUsed;
@@ -119,11 +125,11 @@ public class GuessResponse {
         this.gameOver = gameOver;
     }
 
-    public int getGuessNumber() {
+    public long getGuessNumber() {
         return guessNumber;
     }
 
-    public void setGuessNumber(int guessNumber) {
+    public void setGuessNumber(long guessNumber) {
         this.guessNumber = guessNumber;
     }
 
@@ -167,12 +173,60 @@ public class GuessResponse {
         this.extraClue = extraClue;
     }
 
-    public Integer getDistance() {
+    public Long getDistance() {
         return distance;
     }
 
-    public void setDistance(Integer distance) {
+    public void setDistance(Long distance) {
         this.distance = distance;
+    }
+
+    public Integer getLevel() {
+        return level;
+    }
+
+    public void setLevel(Integer level) {
+        this.level = level;
+    }
+
+    public Integer getHighestUnlockedLevel() {
+        return highestUnlockedLevel;
+    }
+
+    public void setHighestUnlockedLevel(Integer highestUnlockedLevel) {
+        this.highestUnlockedLevel = highestUnlockedLevel;
+    }
+
+    public boolean isNextLevelUnlocked() {
+        return nextLevelUnlocked;
+    }
+
+    public void setNextLevelUnlocked(boolean nextLevelUnlocked) {
+        this.nextLevelUnlocked = nextLevelUnlocked;
+    }
+
+    public String getMilestoneBadgeEarned() {
+        return milestoneBadgeEarned;
+    }
+
+    public void setMilestoneBadgeEarned(String milestoneBadgeEarned) {
+        this.milestoneBadgeEarned = milestoneBadgeEarned;
+    }
+
+    public Integer getXpEarned() {
+        return xpEarned;
+    }
+
+    public void setXpEarned(Integer xpEarned) {
+        this.xpEarned = xpEarned;
+    }
+
+    public Long getTotalXp() {
+        return totalXp;
+    }
+
+    public void setTotalXp(Long totalXp) {
+        this.totalXp = totalXp;
     }
 
     public Long getCoinsEarned() {

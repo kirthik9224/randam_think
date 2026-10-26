@@ -92,8 +92,8 @@ public class MatchmakingService {
             createReq.setMaxPlayers(2);
             createReq.setMinNumber(1);
             createReq.setMaxNumber(100);
-            createReq.setAttemptsPerRound(7);
-            createReq.setTotalRounds(1);
+            createReq.setAttemptsPerRound(8);
+            createReq.setTotalRounds(10);
             createReq.setStakeAmount(0L);
 
             // Opponent is host

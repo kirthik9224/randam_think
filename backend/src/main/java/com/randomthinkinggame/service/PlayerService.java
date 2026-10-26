@@ -103,6 +103,11 @@ public class PlayerService {
         dto.setCreatedAt(player.getCreatedAt());
         dto.setVirtualCoins(player.getVirtualCoins());
         dto.setConsecutiveWins(player.getConsecutiveWins());
+        dto.setHighestUnlockedLevel(player.getHighestUnlockedLevel());
+        dto.setCurrentSoloLevel(player.getCurrentSoloLevel());
+        dto.setSoloXp(player.getSoloXp());
+        dto.setSoloStars(player.getSoloStars());
+        dto.setMilestoneBadges(player.getMilestoneBadges());
 
         return dto;
     }

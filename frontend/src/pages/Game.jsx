@@ -264,7 +264,7 @@ const Game = () => {
     setGameLevel(nextLevelNumber);
     const nextCfg = getLevelConfig(nextLevelNumber);
     initNewGame(
-      nextLevelNumber <= 2 ? 'EASY' : nextLevelNumber <= 5 ? 'MEDIUM' : nextLevelNumber <= 10 ? 'HARD' : 'EXPERT',
+      nextCfg.difficulty || 'MEDIUM',
       'CLASSIC',
       'SOLO',
       roster,
@@ -549,6 +549,14 @@ const Game = () => {
         let levelProgResult = null;
         if (response.status === 'WON' && gameLevel) {
           levelProgResult = completeLevel(gameLevel, response.attemptsUsed, safeAttemptsAllowed);
+          if (currentUser?.id) {
+            gameService.syncOfflineProgress(
+              currentUser.id,
+              levelProgResult.nextLevel,
+              levelProgResult.totalStars,
+              levelProgResult.totalXp
+            ).catch(() => {});
+          }
         }
 
         const isWin = response.status === 'WON';
@@ -616,17 +624,27 @@ const Game = () => {
     const min = currentMin || safeMin;
     const max = currentMax || safeMax;
     const guessedSet = new Set(guesses.map((g) => g.guessNumber));
-    const available = [];
-    for (let i = min; i <= max; i++) {
-      if (!guessedSet.has(i)) available.push(i);
+    let chosen;
+
+    if (max - min <= 500) {
+      const available = [];
+      for (let i = min; i <= max; i++) {
+        if (!guessedSet.has(i)) available.push(i);
+      }
+      chosen = available.length > 0
+        ? available[Math.floor(Math.random() * available.length)]
+        : Math.floor(Math.random() * (max - min + 1)) + min;
+    } else {
+      let attempts = 0;
+      do {
+        chosen = Math.floor(Math.random() * (max - min + 1)) + min;
+        attempts++;
+      } while (guessedSet.has(chosen) && attempts < 50);
     }
-    const chosen = available.length > 0
-      ? available[Math.floor(Math.random() * available.length)]
-      : Math.floor(Math.random() * (max - min + 1)) + min;
 
     setGuessInput(String(chosen));
     if (error) setError('');
-    triggerFloatingText(`🎲 Random Pick: ${chosen}`, 'linear-gradient(135deg, #8b5cf6, #6366f1)');
+    triggerFloatingText(`🎲 Random Pick: ${chosen.toLocaleString()}`, 'linear-gradient(135deg, #8b5cf6, #6366f1)');
   };
 
   const handleGuessSubmit = async (e) => {

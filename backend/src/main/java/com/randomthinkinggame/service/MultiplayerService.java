@@ -167,7 +167,7 @@ public class MultiplayerService {
         room.setStakeAmount(stake);
 
         if ("TEAM_BATTLE".equalsIgnoreCase(room.getMatchType())) {
-            room.setTotalRounds(req.getTotalRounds() > 0 ? req.getTotalRounds() : 3);
+            room.setTotalRounds(req.getTotalRounds() > 0 ? req.getTotalRounds() : MultiplayerRoundConfig.TOTAL_MATCH_ROUNDS);
             room.setMaxPlayers(req.getMaxPlayers() >= 2 ? req.getMaxPlayers() : 4);
             if (req.getTeamRedName() != null && !req.getTeamRedName().isBlank()) {
                 room.setTeamRedName(req.getTeamRedName().trim());
@@ -176,7 +176,7 @@ public class MultiplayerService {
                 room.setTeamBlueName(req.getTeamBlueName().trim());
             }
         } else {
-            room.setTotalRounds(req.getTotalRounds() > 0 ? req.getTotalRounds() : 1);
+            room.setTotalRounds(req.getTotalRounds() > 0 ? req.getTotalRounds() : MultiplayerRoundConfig.TOTAL_MATCH_ROUNDS);
             room.setMaxPlayers(req.getMaxPlayers() >= 2 ? req.getMaxPlayers() : 4);
         }
 
@@ -433,10 +433,8 @@ public class MultiplayerService {
         room.setTeamBlueScore(0);
 
         MultiplayerRoundConfig.RoundSetting setting = MultiplayerRoundConfig.getRoundSetting(1);
-        if (room.getTotalRounds() >= 9) {
-            room.setMinNumber(setting.getMinNumber());
-            room.setMaxNumber(setting.getMaxNumber());
-        }
+        room.setMinNumber(setting.getMinNumber());
+        room.setMaxNumber(setting.getMaxNumber());
         room.setAttemptsPerRound(setting.getAttemptsPerPlayer());
         room.setTurnTimeLimitSeconds(setting.getTimeLimitSeconds());
         room.setDifficultyLabel(setting.getDifficultyLabel());
@@ -923,10 +921,8 @@ public class MultiplayerService {
         room.setRoundWinningTeam(null);
 
         MultiplayerRoundConfig.RoundSetting setting = MultiplayerRoundConfig.getRoundSetting(newRoundNumber);
-        if (newRoundNumber >= 9 || room.getTotalRounds() >= 9) {
-            room.setMinNumber(setting.getMinNumber());
-            room.setMaxNumber(setting.getMaxNumber());
-        }
+        room.setMinNumber(setting.getMinNumber());
+        room.setMaxNumber(setting.getMaxNumber());
         room.setAttemptsPerRound(setting.getAttemptsPerPlayer());
         room.setTurnTimeLimitSeconds(setting.getTimeLimitSeconds());
         room.setDifficultyLabel(setting.getDifficultyLabel());

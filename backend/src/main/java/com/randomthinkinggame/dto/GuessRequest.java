@@ -5,20 +5,20 @@ import jakarta.validation.constraints.NotNull;
 public class GuessRequest {
 
     @NotNull(message = "Guess number is required")
-    private Integer guess;
+    private Long guess;
 
     public GuessRequest() {
     }
 
-    public GuessRequest(Integer guess) {
+    public GuessRequest(Long guess) {
         this.guess = guess;
     }
 
-    public Integer getGuess() {
+    public Long getGuess() {
         return guess;
     }
 
-    public void setGuess(Integer guess) {
+    public void setGuess(Long guess) {
         this.guess = guess;
     }
 }

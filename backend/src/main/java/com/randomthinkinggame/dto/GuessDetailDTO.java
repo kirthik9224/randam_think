@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 public class GuessDetailDTO {
     private Long id;
-    private int guessNumber;
+    private long guessNumber;
     private String result;
     private int attemptNumber;
     private LocalDateTime createdAt;
@@ -12,7 +12,7 @@ public class GuessDetailDTO {
     public GuessDetailDTO() {
     }
 
-    public GuessDetailDTO(Long id, int guessNumber, String result, int attemptNumber, LocalDateTime createdAt) {
+    public GuessDetailDTO(Long id, long guessNumber, String result, int attemptNumber, LocalDateTime createdAt) {
         this.id = id;
         this.guessNumber = guessNumber;
         this.result = result;
@@ -28,11 +28,11 @@ public class GuessDetailDTO {
         this.id = id;
     }
 
-    public int getGuessNumber() {
+    public long getGuessNumber() {
         return guessNumber;
     }
 
-    public void setGuessNumber(int guessNumber) {
+    public void setGuessNumber(long guessNumber) {
         this.guessNumber = guessNumber;
     }
 

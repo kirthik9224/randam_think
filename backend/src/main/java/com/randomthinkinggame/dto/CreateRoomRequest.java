@@ -8,7 +8,7 @@ public class CreateRoomRequest {
     private int minNumber = 1;
     private int maxNumber = 100;
     private int attemptsPerRound = 7;
-    private int totalRounds = 3;
+    private int totalRounds = 10;
     private String team = "TEAM_RED"; // For team battle
     private String teamRedName = "Team Red";
     private String teamBlueName = "Team Blue";

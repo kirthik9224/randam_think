@@ -14,8 +14,8 @@ public class GameStartRequest {
     private String gameMode = "CLASSIC"; // CLASSIC, HOT_COLD, TIME_ATTACK, DETECTIVE, HARDCORE
     private String playerMode = "SOLO"; // SOLO, 1_VS_CPU, 1P_VS_1P, 2P_VS_2CPU, 2P_VS_2P, 3P_VS_1CPU, 4P_FFA, 4P_VS_4P
 
-    private Integer minNumber;
-    private Integer maxNumber;
+    private Long minNumber;
+    private Long maxNumber;
     private Integer attemptsAllowed;
     private Integer level;
 
@@ -75,19 +75,19 @@ public class GameStartRequest {
         this.playerMode = playerMode;
     }
 
-    public Integer getMinNumber() {
+    public Long getMinNumber() {
         return minNumber;
     }
 
-    public void setMinNumber(Integer minNumber) {
+    public void setMinNumber(Long minNumber) {
         this.minNumber = minNumber;
     }
 
-    public Integer getMaxNumber() {
+    public Long getMaxNumber() {
         return maxNumber;
     }
 
-    public void setMaxNumber(Integer maxNumber) {
+    public void setMaxNumber(Long maxNumber) {
         this.maxNumber = maxNumber;
     }
 

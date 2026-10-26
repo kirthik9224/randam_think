@@ -4,7 +4,8 @@ import authService from '../services/authService';
 import leaderboardService from '../services/leaderboardService';
 import gameService from '../services/gameService';
 import sounds from '../utils/soundEffects';
-import { getLevelProgression, getLevelConfig, LEVELS } from '../utils/levelProgression';
+import { getLevelProgression, getLevelConfig, MAX_LEVEL, STAGES } from '../utils/levelProgression';
+import LevelMap from '../components/LevelMap';
 import LoadingSpinner from '../components/LoadingSpinner';
 import '../styles/Dashboard.css';
 import '../styles/CollageGameTheme.css';
@@ -36,7 +37,7 @@ const Dashboard = () => {
     Object.keys(progress.levelStars || {}).filter((lvl) => (progress.levelStars[lvl] || 0) > 0).length,
     progress.unlockedLevel - 1
   );
-  const progressPercent = Math.min(100, Math.round((completedLevelsCount / LEVELS.length) * 100));
+  const progressPercent = Math.min(100, Math.round((completedLevelsCount / MAX_LEVEL) * 100));
 
   useEffect(() => {
     let user = authService.getCurrentUser();
@@ -70,14 +71,7 @@ const Dashboard = () => {
     navigate('/game', {
       state: {
         level: lvlCfg.level,
-        difficulty:
-          lvlCfg.level <= 2
-            ? 'EASY'
-            : lvlCfg.level <= 5
-            ? 'MEDIUM'
-            : lvlCfg.level <= 10
-            ? 'HARD'
-            : 'EXPERT',
+        difficulty: lvlCfg.difficulty,
         minNumber: lvlCfg.min,
         maxNumber: lvlCfg.max,
         attemptsAllowed: lvlCfg.attempts,
@@ -154,15 +148,15 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* 2. Level Progression & Visual Progress Bar Card */}
+        {/* 2. Level Progression & Campaign Map */}
         <div className="dashboard-section-card">
           <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <h4 className="fw-black text-white mb-0 d-flex align-items-center gap-2">
               <span>🏆</span>
-              <span>Level Progression</span>
+              <span>Level Progression & Solo Campaign</span>
             </h4>
             <div className="text-white-50 small font-monospace">
-              Completed: <strong className="text-success">{completedLevelsCount}</strong> of {LEVELS.length} levels ({progressPercent}%)
+              Completed: <strong className="text-success">{completedLevelsCount.toLocaleString()}</strong> of {MAX_LEVEL.toLocaleString()} levels ({progressPercent}%)
             </div>
           </div>
 
@@ -171,87 +165,13 @@ const Dashboard = () => {
             <div className="progress-track" title={`${progressPercent}% Campaign Completed`}>
               <div
                 className="progress-fill"
-                style={{ width: `${Math.max(4, progressPercent)}%` }}
+                style={{ width: `${Math.max(2, progressPercent)}%` }}
               ></div>
             </div>
           </div>
 
-          {/* Completed, Current, and Locked Levels */}
-          <div className="mb-2">
-            <div className="d-flex justify-content-between align-items-center mb-2.5">
-              <span className="text-white-50 small fw-bold text-uppercase tracking-wider">
-                Campaign Map (12 Levels)
-              </span>
-              <span className="text-info small">
-                Target: 1 to {currentLvlCfg.max}
-              </span>
-            </div>
-
-            <div className="levels-grid">
-              {LEVELS.map((lvl) => {
-                const isCompleted =
-                  lvl.level < progress.unlockedLevel || Boolean(progress.levelStars[lvl.level]);
-                const isCurrent = lvl.level === progress.unlockedLevel;
-                const isLocked = lvl.level > progress.unlockedLevel;
-
-                let chipClass = 'level-chip-locked';
-                if (isCurrent) chipClass = 'level-chip-current';
-                else if (isCompleted) chipClass = 'level-chip-completed';
-
-                return (
-                  <div
-                    key={lvl.level}
-                    className={`level-chip ${chipClass}`}
-                    onClick={() => {
-                      if (!isLocked) handleStartLevel(lvl.level);
-                    }}
-                    title={
-                      isCompleted
-                        ? `Level ${lvl.level}: ${lvl.title} (Completed) - Click to replay`
-                        : isCurrent
-                        ? `Level ${lvl.level}: ${lvl.title} (Current Active Level) - Click to play`
-                        : `Level ${lvl.level}: Locked (Complete Level ${lvl.level - 1} first)`
-                    }
-                  >
-                    <div className="d-flex justify-content-between align-items-center mb-1">
-                      <span className="fw-bold font-monospace small" style={{ color: isCurrent ? '#38bdf8' : isCompleted ? '#10b981' : '#94a3b8' }}>
-                        Lvl {lvl.level}
-                      </span>
-                      <span>
-                        {isCompleted ? '⭐' : isCurrent ? '🔥' : '🔒'}
-                      </span>
-                    </div>
-
-                    <div className="small fw-semibold text-truncate text-white mb-1" style={{ fontSize: '0.8rem' }}>
-                      {lvl.title}
-                    </div>
-
-                    <div className="font-monospace text-white-50" style={{ fontSize: '0.74rem' }}>
-                      1–{lvl.max}
-                    </div>
-
-                    <div className="mt-1">
-                      {isCompleted && (
-                        <span className="badge bg-success-subtle text-success rounded-pill font-monospace" style={{ fontSize: '0.65rem' }}>
-                          ✓ Done
-                        </span>
-                      )}
-                      {isCurrent && (
-                        <span className="badge bg-info text-dark rounded-pill font-monospace" style={{ fontSize: '0.65rem' }}>
-                          ▶ Play
-                        </span>
-                      )}
-                      {isLocked && (
-                        <span className="badge bg-secondary-subtle text-muted rounded-pill font-monospace" style={{ fontSize: '0.65rem' }}>
-                          Locked
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          {/* Dynamic 5,000 Levels Explorer Map */}
+          <LevelMap onSelectLevel={handleStartLevel} currentActiveLevel={progress.unlockedLevel} />
         </div>
 
         {/* 3. Performance Metrics (Best Score & Win Rate, only if supported by actual data) */}

@@ -34,8 +34,8 @@ const MultiplayerHub = () => {
   const [roomName, setRoomName] = useState('');
   const [minNumber, setMinNumber] = useState(1);
   const [maxNumber, setMaxNumber] = useState(100);
-  const [attemptsPerRound, setAttemptsPerRound] = useState(7);
-  const [totalRounds, setTotalRounds] = useState(3);
+  const [attemptsPerRound, setAttemptsPerRound] = useState(8);
+  const [totalRounds, setTotalRounds] = useState(10);
   const [stakeAmount, setStakeAmount] = useState(0);
   const [teamRedName, setTeamRedName] = useState('Team Red');
   const [teamBlueName, setTeamBlueName] = useState('Team Blue');
@@ -233,8 +233,8 @@ const MultiplayerHub = () => {
         roomName: roomName.trim() || `${user?.username || 'Player'}'s Match`,
         minNumber: min,
         maxNumber: max,
-        attemptsPerRound: parseInt(attemptsPerRound, 10) || 7,
-        totalRounds: selectedMode === 'TEAM_BATTLE' ? parseInt(totalRounds, 10) : 1,
+        attemptsPerRound: parseInt(attemptsPerRound, 10) || 8,
+        totalRounds: parseInt(totalRounds, 10) || 10,
         stakeAmount: Number(stakeAmount),
         maxPlayers: parseInt(teamSize, 10) || 4,
         team: selectedTeam,
