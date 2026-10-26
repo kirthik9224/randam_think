@@ -171,6 +171,7 @@ const MultiplayerHub = () => {
   // MODAL CONTROLS
   // -------------------------------------------------------------
   const openCreateModal = (mode) => {
+    console.log('Action: openCreateModal ->', mode);
     sounds.playClick();
     setSelectedMode(mode);
     setModalError('');
@@ -185,14 +186,17 @@ const MultiplayerHub = () => {
       setTeamSize(4);
       setAttemptsPerRound(7);
     }
+    setShowJoinModal(false);
     setShowCreateModal(true);
   };
 
   const openJoinModal = (mode) => {
+    console.log('Action: openJoinModal ->', mode);
     sounds.playClick();
     setSelectedMode(mode);
     setJoinCode('');
     setModalError('');
+    setShowCreateModal(false);
     setShowJoinModal(true);
   };
 
@@ -340,15 +344,21 @@ const MultiplayerHub = () => {
                     </p>
                   </div>
 
-                  <div className="d-flex flex-column gap-2">
+                  <div className="d-flex flex-column gap-2" style={{ position: 'relative', zIndex: 10 }}>
                     <button
+                      type="button"
+                      data-testid="create-private-room-btn"
                       className="btn btn-info py-2.5 rounded-pill fw-bold text-dark shadow-sm"
+                      style={{ position: 'relative', zIndex: 10, cursor: 'pointer' }}
                       onClick={() => openCreateModal('FRIENDS')}
                     >
                       Create Private Room
                     </button>
                     <button
+                      type="button"
+                      data-testid="join-with-code-btn"
                       className="btn btn-outline-info py-2.5 rounded-pill fw-bold"
+                      style={{ position: 'relative', zIndex: 10, cursor: 'pointer' }}
                       onClick={() => openJoinModal('FRIENDS')}
                     >
                       Join with Code
@@ -371,13 +381,18 @@ const MultiplayerHub = () => {
                     </p>
                   </div>
 
-                  <button
-                    className="btn btn-primary py-3 rounded-pill fw-black fs-5 shadow"
-                    onClick={handleStartQuickMatch}
-                    disabled={isSearchingMatch}
-                  >
-                    🚀 Find Match Now
-                  </button>
+                  <div style={{ position: 'relative', zIndex: 10 }}>
+                    <button
+                      type="button"
+                      data-testid="find-match-now-btn"
+                      className="btn btn-primary w-100 py-3 rounded-pill fw-black fs-5 shadow"
+                      style={{ position: 'relative', zIndex: 10, cursor: 'pointer' }}
+                      onClick={handleStartQuickMatch}
+                      disabled={isSearchingMatch}
+                    >
+                      🚀 Find Match Now
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -395,15 +410,21 @@ const MultiplayerHub = () => {
                     </p>
                   </div>
 
-                  <div className="d-flex flex-column gap-2">
+                  <div className="d-flex flex-column gap-2" style={{ position: 'relative', zIndex: 10 }}>
                     <button
+                      type="button"
+                      data-testid="create-team-battle-btn"
                       className="btn btn-danger py-2.5 rounded-pill fw-bold shadow-sm"
+                      style={{ position: 'relative', zIndex: 10, cursor: 'pointer' }}
                       onClick={() => openCreateModal('TEAM_BATTLE')}
                     >
                       Create Team Battle
                     </button>
                     <button
+                      type="button"
+                      data-testid="join-battle-code-btn"
                       className="btn btn-outline-danger py-2.5 rounded-pill fw-bold"
+                      style={{ position: 'relative', zIndex: 10, cursor: 'pointer' }}
                       onClick={() => openJoinModal('TEAM_BATTLE')}
                     >
                       Join Battle Code

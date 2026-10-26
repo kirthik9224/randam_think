@@ -23,7 +23,6 @@
 }
 
 .mp-mode-card {
-  cursor: pointer;
   border-radius: 1.25rem;
   position: relative;
   overflow: hidden;
@@ -37,6 +36,8 @@
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 100%);
   opacity: 0;
   transition: opacity 0.2s ease;
+  pointer-events: none !important; /* CRITICAL: Never intercept mouse clicks */
+  z-index: 1;
 }
 
 .mp-mode-card:hover {
@@ -46,6 +47,19 @@
 
 .mp-mode-card:hover::before {
   opacity: 1;
+}
+
+.mp-mode-card > * {
+  position: relative;
+  z-index: 2;
+}
+
+.mp-mode-card button,
+.mp-mode-card .btn {
+  position: relative;
+  z-index: 10 !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
 }
 
 .mp-coin-badge {

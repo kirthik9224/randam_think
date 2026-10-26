@@ -92,7 +92,7 @@ function App() {
             <Route
               path="/multiplayer"
               element={
-                <ProtectedRoute allowGuest={false}>
+                <ProtectedRoute allowGuest={true}>
                   <MultiplayerHub />
                 </ProtectedRoute>
               }
@@ -100,7 +100,7 @@ function App() {
             <Route
               path="/multiplayer/room/:roomCode"
               element={
-                <ProtectedRoute allowGuest={false}>
+                <ProtectedRoute allowGuest={true}>
                   <MultiplayerRoomPage />
                 </ProtectedRoute>
               }
