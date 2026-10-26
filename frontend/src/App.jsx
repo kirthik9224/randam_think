@@ -14,6 +14,8 @@ import Leaderboard from './pages/Leaderboard';
 import History from './pages/History';
 import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
+import MultiplayerHub from './pages/MultiplayerHub';
+import MultiplayerRoomPage from './pages/MultiplayerRoomPage';
 
 import sounds from './utils/soundEffects';
 import { applyThemeClass } from './utils/themeHelper';
@@ -84,6 +86,22 @@ function App() {
               element={
                 <ProtectedRoute allowGuest={true}>
                   <Game />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/multiplayer"
+              element={
+                <ProtectedRoute allowGuest={false}>
+                  <MultiplayerHub />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/multiplayer/room/:roomCode"
+              element={
+                <ProtectedRoute allowGuest={false}>
+                  <MultiplayerRoomPage />
                 </ProtectedRoute>
               }
             />

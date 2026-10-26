@@ -75,6 +75,12 @@ const Navbar = ({ darkMode, toggleDarkMode, soundEnabled, toggleSound }) => {
               </li>
 
               <li className="nav-item">
+                <Link className={`nav-link text-nowrap ${isActive('/multiplayer')}`} to="/multiplayer">
+                  <i className="bi bi-people-fill me-1 text-info"></i> Multiplayer
+                </Link>
+              </li>
+
+              <li className="nav-item">
                 <Link className={`nav-link text-nowrap ${isActive('/history')}`} to="/history">
                   <i className="bi bi-bar-chart-fill me-1"></i> Stats
                 </Link>

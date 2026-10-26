@@ -28,6 +28,9 @@ public class Player {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Column(name = "virtual_coins", nullable = false)
+    private long virtualCoins = 1000L;
+
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Game> games = new ArrayList<>();
 
@@ -88,6 +91,14 @@ public class Player {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public long getVirtualCoins() {
+        return virtualCoins;
+    }
+
+    public void setVirtualCoins(long virtualCoins) {
+        this.virtualCoins = virtualCoins;
     }
 
     public List<Game> getGames() {
