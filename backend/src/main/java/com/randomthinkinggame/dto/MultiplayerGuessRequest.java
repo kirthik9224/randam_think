@@ -1,19 +1,19 @@
 package com.randomthinkinggame.dto;
 
 public class MultiplayerGuessRequest {
-    private int guess;
+    private long guess;
 
     public MultiplayerGuessRequest() {}
 
-    public MultiplayerGuessRequest(int guess) {
+    public MultiplayerGuessRequest(long guess) {
         this.guess = guess;
     }
 
-    public int getGuess() {
+    public long getGuess() {
         return guess;
     }
 
-    public void setGuess(int guess) {
+    public void setGuess(long guess) {
         this.guess = guess;
     }
 }

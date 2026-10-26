@@ -16,8 +16,8 @@ public class MultiplayerRoomDTO {
     private String hostUsername;
     private String matchType;
     private String status;
-    private int minNumber;
-    private int maxNumber;
+    private long minNumber;
+    private long maxNumber;
     private int attemptsPerRound;
     private int maxPlayers;
     private Long currentTurnPlayerId;
@@ -25,7 +25,12 @@ public class MultiplayerRoomDTO {
     private int currentTurnIndex;
     private int currentRoundNumber;
     private int totalRounds;
-    private Integer secretNumber; // Masked (null) during active play!
+    private Long secretNumber; // Masked (null) during active play!
+    private int turnTimeLimitSeconds;
+    private LocalDateTime turnDeadline;
+    private String difficultyLabel;
+    private double rewardMultiplier;
+    private Long secondsRemaining;
     private String roundStatus;
     private Long roundWinnerId;
     private String roundWinnerName;
@@ -63,6 +68,17 @@ public class MultiplayerRoomDTO {
         this.currentTurnIndex = room.getCurrentTurnIndex();
         this.currentRoundNumber = room.getCurrentRoundNumber();
         this.totalRounds = room.getTotalRounds();
+        this.turnTimeLimitSeconds = room.getTurnTimeLimitSeconds();
+        this.turnDeadline = room.getTurnDeadline();
+        this.difficultyLabel = room.getDifficultyLabel();
+        this.rewardMultiplier = room.getRewardMultiplier();
+
+        if (room.getTurnDeadline() != null) {
+            long secs = java.time.Duration.between(LocalDateTime.now(), room.getTurnDeadline()).getSeconds();
+            this.secondsRemaining = Math.max(0L, secs);
+        } else {
+            this.secondsRemaining = (long) room.getTurnTimeLimitSeconds();
+        }
         
         // Security requirement: Only reveal secret number if round is ended or match is finished!
         if ("ROUND_WON".equals(room.getRoundStatus()) || "ROUND_DRAW".equals(room.getRoundStatus()) || "FINISHED".equals(room.getStatus())) {
@@ -153,19 +169,19 @@ public class MultiplayerRoomDTO {
         this.status = status;
     }
 
-    public int getMinNumber() {
+    public long getMinNumber() {
         return minNumber;
     }
 
-    public void setMinNumber(int minNumber) {
+    public void setMinNumber(long minNumber) {
         this.minNumber = minNumber;
     }
 
-    public int getMaxNumber() {
+    public long getMaxNumber() {
         return maxNumber;
     }
 
-    public void setMaxNumber(int maxNumber) {
+    public void setMaxNumber(long maxNumber) {
         this.maxNumber = maxNumber;
     }
 
@@ -225,12 +241,52 @@ public class MultiplayerRoomDTO {
         this.totalRounds = totalRounds;
     }
 
-    public Integer getSecretNumber() {
+    public Long getSecretNumber() {
         return secretNumber;
     }
 
-    public void setSecretNumber(Integer secretNumber) {
+    public void setSecretNumber(Long secretNumber) {
         this.secretNumber = secretNumber;
+    }
+
+    public int getTurnTimeLimitSeconds() {
+        return turnTimeLimitSeconds;
+    }
+
+    public void setTurnTimeLimitSeconds(int turnTimeLimitSeconds) {
+        this.turnTimeLimitSeconds = turnTimeLimitSeconds;
+    }
+
+    public LocalDateTime getTurnDeadline() {
+        return turnDeadline;
+    }
+
+    public void setTurnDeadline(LocalDateTime turnDeadline) {
+        this.turnDeadline = turnDeadline;
+    }
+
+    public String getDifficultyLabel() {
+        return difficultyLabel != null ? difficultyLabel : "STANDARD";
+    }
+
+    public void setDifficultyLabel(String difficultyLabel) {
+        this.difficultyLabel = difficultyLabel;
+    }
+
+    public double getRewardMultiplier() {
+        return rewardMultiplier;
+    }
+
+    public void setRewardMultiplier(double rewardMultiplier) {
+        this.rewardMultiplier = rewardMultiplier;
+    }
+
+    public Long getSecondsRemaining() {
+        return secondsRemaining;
+    }
+
+    public void setSecondsRemaining(Long secondsRemaining) {
+        this.secondsRemaining = secondsRemaining;
     }
 
     public String getRoundStatus() {

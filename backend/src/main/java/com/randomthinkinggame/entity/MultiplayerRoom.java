@@ -33,10 +33,10 @@ public class MultiplayerRoom {
     private String status = "WAITING"; // WAITING, IN_PROGRESS, FINISHED, CANCELLED
 
     @Column(name = "min_number", nullable = false)
-    private int minNumber = 1;
+    private long minNumber = 1L;
 
     @Column(name = "max_number", nullable = false)
-    private int maxNumber = 100;
+    private long maxNumber = 100L;
 
     @Column(name = "attempts_per_round", nullable = false)
     private int attemptsPerRound = 7;
@@ -60,7 +60,19 @@ public class MultiplayerRoom {
     private int totalRounds = 3;
 
     @Column(name = "secret_number", nullable = false)
-    private int secretNumber;
+    private long secretNumber;
+
+    @Column(name = "turn_time_limit_seconds", nullable = false)
+    private int turnTimeLimitSeconds = 45;
+
+    @Column(name = "turn_deadline")
+    private LocalDateTime turnDeadline;
+
+    @Column(name = "difficulty_label", length = 50)
+    private String difficultyLabel = "WARM UP";
+
+    @Column(name = "reward_multiplier", nullable = false)
+    private double rewardMultiplier = 1.0;
 
     @Column(name = "round_status", nullable = false, length = 30)
     private String roundStatus = "IN_PROGRESS"; // IN_PROGRESS, ROUND_WON, ROUND_DRAW
@@ -170,19 +182,19 @@ public class MultiplayerRoom {
         this.status = status;
     }
 
-    public int getMinNumber() {
+    public long getMinNumber() {
         return minNumber;
     }
 
-    public void setMinNumber(int minNumber) {
+    public void setMinNumber(long minNumber) {
         this.minNumber = minNumber;
     }
 
-    public int getMaxNumber() {
+    public long getMaxNumber() {
         return maxNumber;
     }
 
-    public void setMaxNumber(int maxNumber) {
+    public void setMaxNumber(long maxNumber) {
         this.maxNumber = maxNumber;
     }
 
@@ -242,12 +254,44 @@ public class MultiplayerRoom {
         this.totalRounds = totalRounds;
     }
 
-    public int getSecretNumber() {
+    public long getSecretNumber() {
         return secretNumber;
     }
 
-    public void setSecretNumber(int secretNumber) {
+    public void setSecretNumber(long secretNumber) {
         this.secretNumber = secretNumber;
+    }
+
+    public int getTurnTimeLimitSeconds() {
+        return turnTimeLimitSeconds;
+    }
+
+    public void setTurnTimeLimitSeconds(int turnTimeLimitSeconds) {
+        this.turnTimeLimitSeconds = turnTimeLimitSeconds;
+    }
+
+    public LocalDateTime getTurnDeadline() {
+        return turnDeadline;
+    }
+
+    public void setTurnDeadline(LocalDateTime turnDeadline) {
+        this.turnDeadline = turnDeadline;
+    }
+
+    public String getDifficultyLabel() {
+        return difficultyLabel != null ? difficultyLabel : "STANDARD";
+    }
+
+    public void setDifficultyLabel(String difficultyLabel) {
+        this.difficultyLabel = difficultyLabel;
+    }
+
+    public double getRewardMultiplier() {
+        return rewardMultiplier;
+    }
+
+    public void setRewardMultiplier(double rewardMultiplier) {
+        this.rewardMultiplier = rewardMultiplier;
     }
 
     public String getRoundStatus() {

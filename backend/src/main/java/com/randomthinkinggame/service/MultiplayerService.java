@@ -1,5 +1,6 @@
 package com.randomthinkinggame.service;
 
+import com.randomthinkinggame.config.MultiplayerRoundConfig;
 import com.randomthinkinggame.dto.CreateRoomRequest;
 import com.randomthinkinggame.dto.JoinRoomRequest;
 import com.randomthinkinggame.dto.MultiplayerRoomDTO;
@@ -72,6 +73,15 @@ public class MultiplayerService {
             }
         }
         return UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+    }
+
+    private long generateSecretNumber(long min, long max) {
+        if (min >= max) return min;
+        long range = max - min + 1;
+        long secret = min + (long)(secureRandom.nextDouble() * range);
+        if (secret > max) secret = max;
+        if (secret < min) secret = min;
+        return secret;
     }
 
     private void broadcastRoomUpdate(MultiplayerRoom room) {
@@ -412,7 +422,7 @@ public class MultiplayerService {
             room.setTotalPrizePool(stake * room.getPlayers().size());
         }
 
-        // Initialize round 1
+        // Initialize round 1 with difficulty config
         room.setStatus("IN_PROGRESS");
         room.setCurrentRoundNumber(1);
         room.setRoundStatus("IN_PROGRESS");
@@ -422,7 +432,18 @@ public class MultiplayerService {
         room.setTeamRedScore(0);
         room.setTeamBlueScore(0);
 
-        int secret = secureRandom.nextInt(room.getMaxNumber() - room.getMinNumber() + 1) + room.getMinNumber();
+        MultiplayerRoundConfig.RoundSetting setting = MultiplayerRoundConfig.getRoundSetting(1);
+        if (room.getTotalRounds() >= 9) {
+            room.setMinNumber(setting.getMinNumber());
+            room.setMaxNumber(setting.getMaxNumber());
+        }
+        room.setAttemptsPerRound(setting.getAttemptsPerPlayer());
+        room.setTurnTimeLimitSeconds(setting.getTimeLimitSeconds());
+        room.setDifficultyLabel(setting.getDifficultyLabel());
+        room.setRewardMultiplier(setting.getRewardMultiplier());
+        room.setTurnDeadline(LocalDateTime.now().plusSeconds(setting.getTimeLimitSeconds()));
+
+        long secret = generateSecretNumber(room.getMinNumber(), room.getMaxNumber());
         room.setSecretNumber(secret);
 
         // Setup turn order
@@ -465,7 +486,7 @@ public class MultiplayerService {
     }
 
     @Transactional
-    public MultiplayerRoomDTO submitGuess(String roomCode, Long playerId, int guessNumber) {
+    public MultiplayerRoomDTO submitGuess(String roomCode, Long playerId, long guessNumber) {
         MultiplayerRoom room = roomRepository.findByRoomCode(roomCode.trim().toUpperCase())
                 .orElseThrow(() -> new ResourceNotFoundException("Room not found: " + roomCode));
 
@@ -481,10 +502,6 @@ public class MultiplayerService {
             throw new BadRequestException("It is not your turn! Current turn: " + room.getCurrentTurnUsername());
         }
 
-        if (guessNumber < room.getMinNumber() || guessNumber > room.getMaxNumber()) {
-            throw new BadRequestException("Guess must be between " + room.getMinNumber() + " and " + room.getMaxNumber());
-        }
-
         RoomPlayer player = room.getPlayers().stream()
                 .filter(p -> p.getPlayerId().equals(playerId))
                 .findFirst()
@@ -492,6 +509,33 @@ public class MultiplayerService {
 
         if (player.getAttemptsRemaining() <= 0) {
             throw new BadRequestException("You have no attempts remaining in this round");
+        }
+
+        // Server-enforced turn time limit
+        if (room.getTurnDeadline() != null && LocalDateTime.now().isAfter(room.getTurnDeadline().plusSeconds(2))) {
+            player.setAttemptsRemaining(Math.max(0, player.getAttemptsRemaining() - 1));
+            roomPlayerRepository.save(player);
+
+            boolean anyAttemptsLeft = room.getPlayers().stream().anyMatch(p -> p.getAttemptsRemaining() > 0);
+            if (!anyAttemptsLeft) {
+                room.setRoundStatus("ROUND_DRAW");
+                room.setRoundWinnerId(null);
+                room.setRoundWinnerName("No one (Draw)");
+                room.setRoundWinningTeam("DRAW");
+                checkMatchCompletion(room);
+            } else {
+                advanceTurn(room);
+                room.setTurnDeadline(LocalDateTime.now().plusSeconds(room.getTurnTimeLimitSeconds()));
+            }
+
+            room.setUpdatedAt(LocalDateTime.now());
+            MultiplayerRoom saved = roomRepository.save(room);
+            broadcastRoomUpdate(saved);
+            throw new BadRequestException("Turn time limit expired (" + room.getTurnTimeLimitSeconds() + "s)! Attempt deducted and turn passed.");
+        }
+
+        if (guessNumber < room.getMinNumber() || guessNumber > room.getMaxNumber()) {
+            throw new BadRequestException("Guess must be between " + room.getMinNumber() + " and " + room.getMaxNumber());
         }
 
         // Check duplicate guesses in this round
@@ -505,7 +549,7 @@ public class MultiplayerService {
         player.setAttemptsRemaining(player.getAttemptsRemaining() - 1);
         roomPlayerRepository.save(player);
 
-        int secret = room.getSecretNumber();
+        long secret = room.getSecretNumber();
         String result;
         String message;
 
@@ -541,7 +585,8 @@ public class MultiplayerService {
             room.setRoundWinnerName(player.getUsername());
             room.setRoundWinningTeam(player.getTeam());
 
-            int roundPoints = 100 + (player.getAttemptsRemaining() * 10);
+            int baseRoundPoints = 100 + (player.getAttemptsRemaining() * 10);
+            int roundPoints = (int) Math.round(baseRoundPoints * Math.max(1.0, room.getRewardMultiplier()));
             player.setScore(player.getScore() + roundPoints);
             player.setRoundsWon(player.getRoundsWon() + 1);
             roomPlayerRepository.save(player);
@@ -569,6 +614,7 @@ public class MultiplayerService {
             } else {
                 // Advance turn to next player with attempts remaining
                 advanceTurn(room);
+                room.setTurnDeadline(LocalDateTime.now().plusSeconds(room.getTurnTimeLimitSeconds()));
             }
         }
 
@@ -578,6 +624,53 @@ public class MultiplayerService {
 
         List<MultiplayerGuess> updatedGuesses = guessRepository.findByRoomIdOrderByCreatedAtAsc(saved.getId());
         return new MultiplayerRoomDTO(saved, updatedGuesses);
+    }
+
+    @Transactional
+    public MultiplayerRoomDTO handleTurnTimeout(String roomCode, Long playerId) {
+        MultiplayerRoom room = roomRepository.findByRoomCode(roomCode.trim().toUpperCase())
+                .orElseThrow(() -> new ResourceNotFoundException("Room not found: " + roomCode));
+
+        if (!"IN_PROGRESS".equalsIgnoreCase(room.getStatus()) || !"IN_PROGRESS".equalsIgnoreCase(room.getRoundStatus())) {
+            List<MultiplayerGuess> guesses = guessRepository.findByRoomIdOrderByCreatedAtAsc(room.getId());
+            return new MultiplayerRoomDTO(room, guesses);
+        }
+
+        if (room.getTurnDeadline() != null && LocalDateTime.now().isAfter(room.getTurnDeadline())) {
+            Long currentTurnId = room.getCurrentTurnPlayerId();
+            if (currentTurnId != null) {
+                RoomPlayer player = room.getPlayers().stream()
+                        .filter(p -> p.getPlayerId().equals(currentTurnId))
+                        .findFirst()
+                        .orElse(null);
+
+                if (player != null && player.getAttemptsRemaining() > 0) {
+                    player.setAttemptsRemaining(player.getAttemptsRemaining() - 1);
+                    roomPlayerRepository.save(player);
+                }
+
+                boolean anyAttemptsLeft = room.getPlayers().stream().anyMatch(p -> p.getAttemptsRemaining() > 0);
+                if (!anyAttemptsLeft) {
+                    room.setRoundStatus("ROUND_DRAW");
+                    room.setRoundWinnerId(null);
+                    room.setRoundWinnerName("No one (Draw)");
+                    room.setRoundWinningTeam("DRAW");
+                    checkMatchCompletion(room);
+                } else {
+                    advanceTurn(room);
+                    room.setTurnDeadline(LocalDateTime.now().plusSeconds(room.getTurnTimeLimitSeconds()));
+                }
+
+                room.setUpdatedAt(LocalDateTime.now());
+                MultiplayerRoom saved = roomRepository.save(room);
+                broadcastRoomUpdate(saved);
+                List<MultiplayerGuess> updatedGuesses = guessRepository.findByRoomIdOrderByCreatedAtAsc(saved.getId());
+                return new MultiplayerRoomDTO(saved, updatedGuesses);
+            }
+        }
+
+        List<MultiplayerGuess> guesses = guessRepository.findByRoomIdOrderByCreatedAtAsc(room.getId());
+        return new MultiplayerRoomDTO(room, guesses);
     }
 
     private void advanceTurn(MultiplayerRoom room) {
@@ -606,8 +699,9 @@ public class MultiplayerService {
         int roundsNeededToWin = (room.getTotalRounds() / 2) + 1;
 
         if ("TEAM_BATTLE".equalsIgnoreCase(room.getMatchType())) {
-            boolean redClinched = room.getTeamRedScore() >= roundsNeededToWin;
-            boolean blueClinched = room.getTeamBlueScore() >= roundsNeededToWin;
+            // For gauntlets (9+ rounds), play all rounds so nightmare & boss rounds are experienced
+            boolean redClinched = room.getTotalRounds() < 9 && room.getTeamRedScore() >= roundsNeededToWin;
+            boolean blueClinched = room.getTotalRounds() < 9 && room.getTeamBlueScore() >= roundsNeededToWin;
             boolean allRoundsPlayed = room.getCurrentRoundNumber() >= room.getTotalRounds();
 
             if (redClinched || blueClinched || allRoundsPlayed) {
@@ -670,6 +764,28 @@ public class MultiplayerService {
             // Award base Team Battle win reward (150 coins + streak check)
             coinWalletService.recordGameResult(wp.getPlayerId(), true, false, "TEAM_BATTLE", room.getId());
 
+            // Multiplier bonus for high-difficulty rounds
+            if (room.getRewardMultiplier() > 1.0) {
+                long bonusCoins = (long) Math.round(150 * (room.getRewardMultiplier() - 1.0));
+                Player p = playerRepository.findById(wp.getPlayerId()).orElse(null);
+                if (p != null) {
+                    long newBalance = p.getVirtualCoins() + bonusCoins;
+                    p.setVirtualCoins(newBalance);
+                    playerRepository.save(p);
+
+                    CoinTransaction tx = new CoinTransaction(
+                            p.getId(),
+                            p.getUsername(),
+                            bonusCoins,
+                            "DIFFICULTY_BONUS",
+                            room.getId(),
+                            room.getDifficultyLabel() + " Round Victory Multiplier Bonus (" + room.getRewardMultiplier() + "x)",
+                            newBalance
+                    );
+                    coinTransactionRepository.save(tx);
+                }
+            }
+
             // If there was a stake pool, award the player's share
             if (share > 0) {
                 Player p = playerRepository.findById(wp.getPlayerId()).orElse(null);
@@ -708,6 +824,28 @@ public class MultiplayerService {
 
         // Award base Quick Match win reward (100 coins + streak check)
         coinWalletService.recordGameResult(winner.getPlayerId(), true, false, "QUICK_MATCH", room.getId());
+
+        // Multiplier bonus for high-difficulty rounds
+        if (room.getRewardMultiplier() > 1.0) {
+            long bonusCoins = (long) Math.round(100 * (room.getRewardMultiplier() - 1.0));
+            Player p = playerRepository.findById(winner.getPlayerId()).orElse(null);
+            if (p != null) {
+                long newBalance = p.getVirtualCoins() + bonusCoins;
+                p.setVirtualCoins(newBalance);
+                playerRepository.save(p);
+
+                CoinTransaction tx = new CoinTransaction(
+                        p.getId(),
+                        p.getUsername(),
+                        bonusCoins,
+                        "DIFFICULTY_BONUS",
+                        room.getId(),
+                        room.getDifficultyLabel() + " Round Victory Multiplier Bonus (" + room.getRewardMultiplier() + "x)",
+                        newBalance
+                );
+                coinTransactionRepository.save(tx);
+            }
+        }
 
         // If there was a stake pool, award the total prize pool
         if (room.getTotalPrizePool() > 0) {
@@ -777,13 +915,25 @@ public class MultiplayerService {
             throw new BadRequestException("All rounds for this match have been played");
         }
 
-        room.setCurrentRoundNumber(room.getCurrentRoundNumber() + 1);
+        int newRoundNumber = room.getCurrentRoundNumber() + 1;
+        room.setCurrentRoundNumber(newRoundNumber);
         room.setRoundStatus("IN_PROGRESS");
         room.setRoundWinnerId(null);
         room.setRoundWinnerName(null);
         room.setRoundWinningTeam(null);
 
-        int secret = secureRandom.nextInt(room.getMaxNumber() - room.getMinNumber() + 1) + room.getMinNumber();
+        MultiplayerRoundConfig.RoundSetting setting = MultiplayerRoundConfig.getRoundSetting(newRoundNumber);
+        if (newRoundNumber >= 9 || room.getTotalRounds() >= 9) {
+            room.setMinNumber(setting.getMinNumber());
+            room.setMaxNumber(setting.getMaxNumber());
+        }
+        room.setAttemptsPerRound(setting.getAttemptsPerPlayer());
+        room.setTurnTimeLimitSeconds(setting.getTimeLimitSeconds());
+        room.setDifficultyLabel(setting.getDifficultyLabel());
+        room.setRewardMultiplier(setting.getRewardMultiplier());
+        room.setTurnDeadline(LocalDateTime.now().plusSeconds(setting.getTimeLimitSeconds()));
+
+        long secret = generateSecretNumber(room.getMinNumber(), room.getMaxNumber());
         room.setSecretNumber(secret);
 
         for (RoomPlayer p : room.getPlayers()) {

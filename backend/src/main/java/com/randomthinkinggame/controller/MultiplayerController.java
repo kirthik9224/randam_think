@@ -119,6 +119,20 @@ public class MultiplayerController {
         return ResponseEntity.ok(room);
     }
 
+    @PostMapping("/rooms/{roomCode}/timeout")
+    public ResponseEntity<MultiplayerRoomDTO> handleTimeout(
+            @PathVariable String roomCode,
+            @RequestParam(required = false, defaultValue = "999999") Long playerId) {
+        MultiplayerRoomDTO room = multiplayerService.handleTurnTimeout(roomCode, playerId);
+        return ResponseEntity.ok(room);
+    }
+
+    @GetMapping("/round-config/{roundNumber}")
+    public ResponseEntity<com.randomthinkinggame.config.MultiplayerRoundConfig.RoundSetting> getRoundConfig(
+            @PathVariable int roundNumber) {
+        return ResponseEntity.ok(com.randomthinkinggame.config.MultiplayerRoundConfig.getRoundSetting(roundNumber));
+    }
+
     @PostMapping("/rooms/{roomCode}/leave")
     public ResponseEntity<MultiplayerRoomDTO> leaveRoom(
             @PathVariable String roomCode,

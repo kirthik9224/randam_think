@@ -587,8 +587,9 @@ const MultiplayerHub = () => {
                             value={totalRounds}
                             onChange={(e) => setTotalRounds(Number(e.target.value))}
                           >
-                            <option value={3}>Best of 3 (First to 2)</option>
+                            <option value={10}>10 Rounds (Gauntlet: R9 Nightmare, R10 Final Boss)</option>
                             <option value={5}>Best of 5 (First to 3)</option>
+                            <option value={3}>Best of 3 (First to 2)</option>
                             <option value={1}>Single Sudden Death</option>
                           </select>
                         </div>
@@ -605,6 +606,23 @@ const MultiplayerHub = () => {
                         </div>
                       </div>
                     </>
+                  )}
+
+                  {/* Friends Mode Total Rounds */}
+                  {selectedMode === 'FRIENDS' && (
+                    <div className="mb-3">
+                      <label className="form-label text-white-50 small">Total Rounds</label>
+                      <select
+                        className="form-select bg-dark text-white border-secondary"
+                        value={totalRounds}
+                        onChange={(e) => setTotalRounds(Number(e.target.value))}
+                      >
+                        <option value={10}>10 Rounds (Full Gauntlet — R9 Nightmare, R10 Final Boss)</option>
+                        <option value={5}>5 Rounds</option>
+                        <option value={3}>3 Rounds</option>
+                        <option value={1}>1 Round (Sudden Death)</option>
+                      </select>
+                    </div>
                   )}
 
                   {/* Range & Attempts */}

@@ -27,7 +27,7 @@ public class MultiplayerGuess {
     private String team;
 
     @Column(name = "guess_number", nullable = false)
-    private int guessNumber;
+    private long guessNumber;
 
     @Column(nullable = false, length = 20)
     private String result; // TOO_LOW, TOO_HIGH, CORRECT
@@ -44,7 +44,7 @@ public class MultiplayerGuess {
     public MultiplayerGuess() {
     }
 
-    public MultiplayerGuess(Long roomId, int roundNumber, Long playerId, String username, String team, int guessNumber, String result, String message, int attemptNumber) {
+    public MultiplayerGuess(Long roomId, int roundNumber, Long playerId, String username, String team, long guessNumber, String result, String message, int attemptNumber) {
         this.roomId = roomId;
         this.roundNumber = roundNumber;
         this.playerId = playerId;
@@ -105,11 +105,11 @@ public class MultiplayerGuess {
         this.team = team;
     }
 
-    public int getGuessNumber() {
+    public long getGuessNumber() {
         return guessNumber;
     }
 
-    public void setGuessNumber(int guessNumber) {
+    public void setGuessNumber(long guessNumber) {
         this.guessNumber = guessNumber;
     }
 

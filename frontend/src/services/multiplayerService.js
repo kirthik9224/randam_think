@@ -92,6 +92,17 @@ class MultiplayerService {
     return res.data;
   }
 
+  async handleTimeout(roomCode) {
+    const userId = this.getUserId();
+    const res = await api.post(`/multiplayer/rooms/${roomCode}/timeout?playerId=${userId}`);
+    return res.data;
+  }
+
+  async getRoundConfig(roundNumber) {
+    const res = await api.get(`/multiplayer/round-config/${roundNumber}`);
+    return res.data;
+  }
+
   async leaveRoom(roomCode) {
     try {
       const userId = this.getUserId();
