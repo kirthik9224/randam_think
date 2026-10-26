@@ -24,6 +24,30 @@ const Navbar = ({ darkMode, toggleDarkMode, soundEnabled, toggleSound }) => {
     }
   });
 
+  const [installPrompt, setInstallPrompt] = useState(null);
+
+  useEffect(() => {
+    const handleBeforeInstall = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!installPrompt) return;
+    sounds.playClick();
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setInstallPrompt(null);
+    }
+  };
+
   useEffect(() => {
     const handleWalletUpdate = (e) => {
       if (e?.detail?.coins !== undefined) {
@@ -157,6 +181,17 @@ const Navbar = ({ darkMode, toggleDarkMode, soundEnabled, toggleSound }) => {
             </ul>
 
             <div className="d-flex align-items-center gap-2 flex-wrap flex-lg-nowrap ms-lg-auto mt-2 mt-lg-0">
+              {/* Install PWA Button */}
+              {installPrompt && (
+                <button
+                  onClick={handleInstallClick}
+                  className="btn btn-sm btn-outline-warning rounded-pill px-2.5 py-1 font-monospace fw-bold small animate-pulse flex-shrink-0"
+                  title="Install Random Thinking App to Home Screen"
+                >
+                  <i className="bi bi-phone me-1"></i> Install App
+                </button>
+              )}
+
               {/* Virtual Coin Balance Pill */}
               <Link
                 to="/wallet"

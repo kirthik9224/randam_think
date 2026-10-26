@@ -155,6 +155,8 @@ class MultiplayerService {
     try {
       const defaultWsUrl = (typeof window !== 'undefined' && window.location.protocol === 'https:')
         ? `wss://${window.location.host}/ws-multiplayer`
+        : (typeof window !== 'undefined' && window.location.host)
+        ? `ws://${window.location.host}/ws-multiplayer`
         : 'ws://localhost:8080/ws-multiplayer';
       const socketUrl = import.meta.env.VITE_WS_URL || defaultWsUrl;
       this.stompClient = new Client({

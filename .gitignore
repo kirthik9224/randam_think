@@ -32,3 +32,7 @@ Thumbs.db
 
 # Scratch test files
 scratch/
+
+# Binaries & Tools
+tools/
+*.exe

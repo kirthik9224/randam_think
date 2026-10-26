@@ -1,0 +1,20 @@
+{
+  "name": "Random Thinking - Guess the Number",
+  "short_name": "Random Thinking",
+  "description": "Multiplayer & Solo Number Deduction Game with 5,000 Levels",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#7c3aed",
+  "scope": "/",
+  "categories": ["games", "puzzle"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
