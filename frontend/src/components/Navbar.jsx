@@ -18,12 +18,6 @@ const Navbar = ({ darkMode, toggleDarkMode, soundEnabled, toggleSound }) => {
     return localStorage.getItem('rtg_reduced_motion') === 'true';
   });
 
-  const handleLogout = async () => {
-    sounds.playClick();
-    await authService.logout();
-    navigate('/login');
-  };
-
   const handleToggleMotion = () => {
     sounds.playClick();
     setReducedMotion((prev) => {
@@ -173,55 +167,15 @@ const Navbar = ({ darkMode, toggleDarkMode, soundEnabled, toggleSound }) => {
                 <i className="bi bi-gear-fill text-info"></i>
               </button>
 
-              {currentUser ? (
-                <div className="dropdown flex-shrink-0">
-                  <button
-                    className="btn btn-primary btn-sm dropdown-toggle rounded-pill d-flex align-items-center gap-1.5 px-3 py-1 text-nowrap"
-                    type="button"
-                    id="userDropdown"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                  >
-                    <i className="bi bi-person-circle"></i>
-                    <span>{currentUser.username}</span>
-                    {currentUser.role === 'ADMIN' && (
-                      <span className="badge bg-warning text-dark ms-1" style={{ fontSize: '0.65rem' }}>ADMIN</span>
-                    )}
-                  </button>
-                  <ul className="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">
-                    <li>
-                      <Link className="dropdown-item d-flex align-items-center gap-2" to="/profile">
-                        <i className="bi bi-person"></i> My Profile
-                      </Link>
-                    </li>
-                    <li>
-                      <Link className="dropdown-item d-flex align-items-center gap-2" to="/dashboard">
-                        <i className="bi bi-speedometer2"></i> Dashboard
-                      </Link>
-                    </li>
-                    <li>
-                      <Link className="dropdown-item d-flex align-items-center gap-2" to="/history">
-                        <i className="bi bi-journal-text"></i> Game Logs
-                      </Link>
-                    </li>
-                    <li><hr className="dropdown-divider" /></li>
-                    <li>
-                      <button className="dropdown-item text-danger d-flex align-items-center gap-2" onClick={handleLogout}>
-                        <i className="bi bi-box-arrow-right"></i> Logout
-                      </button>
-                    </li>
-                  </ul>
-                </div>
-              ) : (
-                <div className="d-flex gap-2">
-                  <Link to="/login" className="btn btn-outline-primary btn-sm px-3 rounded-pill">
-                    Login
-                  </Link>
-                  <Link to="/register" className="btn btn-primary btn-sm px-3 rounded-pill">
-                    Register
-                  </Link>
-                </div>
-              )}
+              {/* Player Profile Pill (Direct access, no login/logout required) */}
+              <Link
+                to="/profile"
+                className="btn btn-primary btn-sm rounded-pill d-flex align-items-center gap-1.5 px-3 py-1 text-nowrap"
+                title="View Player Profile"
+              >
+                <i className="bi bi-person-circle"></i>
+                <span>{currentUser?.username || 'Player'}</span>
+              </Link>
             </div>
           </div>
         </div>

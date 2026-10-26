@@ -1,81 +1,64 @@
-import api from './api';
-
 const USER_KEY = 'rtg_user';
 
+/**
+ * Player Service (formerly AuthService)
+ * Manages the active player session without requiring any login or signup setup.
+ */
 export const authService = {
-  async register(username, email, password, confirmPassword) {
-    const response = await api.post('/auth/register', {
-      username,
-      email,
-      password,
-      confirmPassword,
-    });
-    if (response.data && response.data.data) {
-      this.setCurrentUser(response.data.data);
-    }
-    return response.data;
-  },
-
-  async login(email, password) {
-    const response = await api.post('/auth/login', {
-      email,
-      password,
-    });
-    if (response.data && response.data.data) {
-      this.setCurrentUser(response.data.data);
-    }
-    return response.data;
-  },
-
-  async logout() {
-    try {
-      await api.post('/auth/logout');
-    } catch (e) {
-      console.warn('Logout API call failed, clearing local storage anyway', e);
-    } finally {
-      localStorage.removeItem(USER_KEY);
-    }
-  },
-
   getCurrentUser() {
     try {
       const user = localStorage.getItem(USER_KEY);
-      return user ? JSON.parse(user) : null;
+      if (user) {
+        const parsed = JSON.parse(user);
+        if (parsed && parsed.username) {
+          return parsed;
+        }
+      }
+      return this.initPlayer('Player');
     } catch (e) {
-      console.error('Error parsing stored user:', e);
-      return null;
+      return this.initPlayer('Player');
     }
   },
 
   setCurrentUser(user) {
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    try {
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+    } catch (e) {
+      console.warn('Error saving player session:', e);
+    }
+  },
+
+  initPlayer(nickname = 'Player') {
+    const defaultPlayer = {
+      id: 1,
+      username: nickname || 'Player',
+      email: 'player@game.local',
+      role: 'PLAYER',
+      isGuest: false,
+      createdAt: new Date().toISOString(),
+    };
+    this.setCurrentUser(defaultPlayer);
+    return defaultPlayer;
+  },
+
+  loginAsGuest(nickname = 'Player') {
+    return this.initPlayer(nickname);
   },
 
   isAuthenticated() {
-    return !!this.getCurrentUser();
+    return true;
   },
 
   isGuest() {
-    const user = this.getCurrentUser();
-    return Boolean(user && user.isGuest);
-  },
-
-  loginAsGuest(nickname = 'Guest Explorer') {
-    const guestUser = {
-      id: 999999,
-      username: nickname || 'Guest Explorer',
-      email: 'guest@offline.local',
-      role: 'PLAYER',
-      isGuest: true,
-      createdAt: new Date().toISOString(),
-    };
-    this.setCurrentUser(guestUser);
-    return guestUser;
+    return false;
   },
 
   isAdmin() {
-    const user = this.getCurrentUser();
-    return user && user.role === 'ADMIN';
+    return false;
+  },
+
+  async logout() {
+    this.initPlayer('Player');
   },
 };
 
