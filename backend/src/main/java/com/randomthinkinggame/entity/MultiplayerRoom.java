@@ -113,6 +113,9 @@ public class MultiplayerRoom {
     @Column(name = "match_winning_team", length = 30)
     private String matchWinningTeam;
 
+    @Column(name = "current_round_clue", length = 500)
+    private String currentRoundClue;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -412,6 +415,14 @@ public class MultiplayerRoom {
 
     public void setTeamBlueName(String teamBlueName) {
         this.teamBlueName = teamBlueName;
+    }
+
+    public String getCurrentRoundClue() {
+        return currentRoundClue;
+    }
+
+    public void setCurrentRoundClue(String currentRoundClue) {
+        this.currentRoundClue = currentRoundClue;
     }
 
     public List<RoomPlayer> getPlayers() {

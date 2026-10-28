@@ -443,6 +443,14 @@ public class MultiplayerService {
 
         long secret = generateSecretNumber(room.getMinNumber(), room.getMaxNumber());
         room.setSecretNumber(secret);
+        int roundNum = room.getCurrentRoundNumber();
+        if (roundNum == 10) {
+            room.setCurrentRoundClue("👑 Boss Intel: Target number is " + (secret % 2 == 0 ? "EVEN" : "ODD") + " and ends in " + (secret % 10) + "!");
+        } else if (roundNum == 9) {
+            room.setCurrentRoundClue("🔥 Nightmare Intel: Target number is " + (secret % 2 == 0 ? "EVEN." : "ODD."));
+        } else {
+            room.setCurrentRoundClue("🕵️ Intel: Clues will unlock as guesses are submitted.");
+        }
 
         // Setup turn order
         List<RoomPlayer> orderedPlayers = new ArrayList<>();
@@ -563,6 +571,14 @@ public class MultiplayerService {
         }
 
         int attemptNumber = roundGuesses.size() + 1;
+        String extraClue = null;
+        if (!"CORRECT".equals(result)) {
+            extraClue = generateMultiplayerRoundClue(secret, attemptNumber, room.getCurrentRoundNumber(), room.getMinNumber(), room.getMaxNumber());
+            if (extraClue != null) {
+                room.setCurrentRoundClue(extraClue);
+            }
+        }
+
         MultiplayerGuess guess = new MultiplayerGuess(
                 room.getId(),
                 room.getCurrentRoundNumber(),
@@ -572,7 +588,8 @@ public class MultiplayerService {
                 guessNumber,
                 result,
                 message,
-                attemptNumber
+                attemptNumber,
+                extraClue
         );
         guessRepository.save(guess);
 
@@ -931,6 +948,14 @@ public class MultiplayerService {
 
         long secret = generateSecretNumber(room.getMinNumber(), room.getMaxNumber());
         room.setSecretNumber(secret);
+        int roundNum = room.getCurrentRoundNumber();
+        if (roundNum == 10) {
+            room.setCurrentRoundClue("👑 Boss Intel: Target number is " + (secret % 2 == 0 ? "EVEN" : "ODD") + " and ends in " + (secret % 10) + "!");
+        } else if (roundNum == 9) {
+            room.setCurrentRoundClue("🔥 Nightmare Intel: Target number is " + (secret % 2 == 0 ? "EVEN." : "ODD."));
+        } else {
+            room.setCurrentRoundClue("🕵️ Intel: Clues will unlock as guesses are submitted.");
+        }
 
         for (RoomPlayer p : room.getPlayers()) {
             p.setAttemptsRemaining(room.getAttemptsPerRound());
@@ -1067,5 +1092,47 @@ public class MultiplayerService {
             result.add(entry);
         }
         return result;
+    }
+
+    private String generateMultiplayerRoundClue(long secret, int roundGuessCount, int roundNumber, long min, long max) {
+        if (roundGuessCount == 1) {
+            return "🧩 Round Intel #1: The secret number is " + (secret % 2 == 0 ? "EVEN (divisible by 2)." : "ODD.");
+        } else if (roundGuessCount == 2) {
+            if (secret % 10 == 0) return "🔢 Round Intel #2: The secret number is a multiple of 10.";
+            if (secret % 5 == 0) return "🔢 Round Intel #2: The secret number is divisible by 5.";
+            if (secret % 3 == 0) return "🔢 Round Intel #2: The secret number is divisible by 3.";
+            if (secret % 4 == 0) return "🔢 Round Intel #2: The secret number is a multiple of 4.";
+            if (isPrime(secret)) return "🔢 Round Intel #2: The secret number is a PRIME number!";
+            return "🔢 Round Intel #2: The secret number is COMPOSITE (not divisible by 2, 3, or 5).";
+        } else if (roundGuessCount == 3) {
+            long sum = sumOfDigits(secret);
+            return "🧮 Round Intel #3: The sum of digits of the secret number is " + sum + ".";
+        } else {
+            if (max - min > 10) {
+                return "🎯 Round Intel #" + roundGuessCount + ": The secret number ends with the digit " + (secret % 10) + ".";
+            } else {
+                return "🎯 Round Intel #" + roundGuessCount + ": The secret number is adjacent to " + (secret > min ? (secret - 1) : (secret + 1)) + ".";
+            }
+        }
+    }
+
+    private long sumOfDigits(long number) {
+        long sum = 0;
+        long temp = Math.abs(number);
+        while (temp > 0) {
+            sum += temp % 10;
+            temp /= 10;
+        }
+        return sum;
+    }
+
+    private boolean isPrime(long n) {
+        if (n <= 1) return false;
+        if (n <= 3) return true;
+        if (n % 2 == 0 || n % 3 == 0) return false;
+        for (long i = 5; i * i <= n; i += 6) {
+            if (n % i == 0 || n % (i + 2) == 0) return false;
+        }
+        return true;
     }
 }

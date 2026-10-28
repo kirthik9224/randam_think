@@ -68,6 +68,9 @@ public class Game {
     @Column(name = "emp_freeze_used", nullable = false)
     private boolean empFreezeUsed = false;
 
+    @Column(name = "clues_used", nullable = false)
+    private int cluesUsed = 0;
+
     @OneToMany(mappedBy = "game", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Guess> guesses = new ArrayList<>();
 
@@ -255,5 +258,13 @@ public class Game {
 
     public void setLevel(Integer level) {
         this.level = level;
+    }
+
+    public int getCluesUsed() {
+        return cluesUsed;
+    }
+
+    public void setCluesUsed(int cluesUsed) {
+        this.cluesUsed = cluesUsed;
     }
 }

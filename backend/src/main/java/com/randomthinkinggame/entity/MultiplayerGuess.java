@@ -35,6 +35,9 @@ public class MultiplayerGuess {
     @Column(length = 255)
     private String message;
 
+    @Column(name = "extra_clue", length = 500)
+    private String extraClue;
+
     @Column(name = "attempt_number", nullable = false)
     private int attemptNumber;
 
@@ -45,6 +48,10 @@ public class MultiplayerGuess {
     }
 
     public MultiplayerGuess(Long roomId, int roundNumber, Long playerId, String username, String team, long guessNumber, String result, String message, int attemptNumber) {
+        this(roomId, roundNumber, playerId, username, team, guessNumber, result, message, attemptNumber, null);
+    }
+
+    public MultiplayerGuess(Long roomId, int roundNumber, Long playerId, String username, String team, long guessNumber, String result, String message, int attemptNumber, String extraClue) {
         this.roomId = roomId;
         this.roundNumber = roundNumber;
         this.playerId = playerId;
@@ -54,6 +61,7 @@ public class MultiplayerGuess {
         this.result = result;
         this.message = message;
         this.attemptNumber = attemptNumber;
+        this.extraClue = extraClue;
         this.createdAt = LocalDateTime.now();
     }
 
@@ -135,6 +143,14 @@ public class MultiplayerGuess {
 
     public void setAttemptNumber(int attemptNumber) {
         this.attemptNumber = attemptNumber;
+    }
+
+    public String getExtraClue() {
+        return extraClue;
+    }
+
+    public void setExtraClue(String extraClue) {
+        this.extraClue = extraClue;
     }
 
     public LocalDateTime getCreatedAt() {

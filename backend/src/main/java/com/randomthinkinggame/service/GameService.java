@@ -196,8 +196,14 @@ public class GameService {
         }
 
         String extraClue = null;
-        if ("DETECTIVE".equals(mode) && guessNum != secret) {
-            extraClue = generateDetectiveClue(secret, attemptsUsed, game.getMinNumber(), game.getMaxNumber());
+        if (guessNum != secret) {
+            long cMin = Math.max(game.getMinNumber(), 1L);
+            long cMax = Math.max(game.getMaxNumber(), 100L);
+            if ("DETECTIVE".equals(mode)) {
+                extraClue = generateProgressiveClue(secret, attemptsUsed, cMin, cMax, game.getAttemptsAllowed());
+            } else if (attemptsUsed == 2 || attemptsUsed == 4 || attemptsUsed == 6 || (game.getAttemptsAllowed() - attemptsUsed) <= 2) {
+                extraClue = generateProgressiveClue(secret, attemptsUsed, cMin, cMax, game.getAttemptsAllowed());
+            }
         }
 
         String result;
@@ -355,31 +361,47 @@ public class GameService {
         }
     }
 
-    private String generateDetectiveClue(long secret, int attempt, long min, long max) {
+    public String generateProgressiveClue(long secret, int attempt, long min, long max, int attemptsAllowed) {
         switch (attempt) {
             case 1:
-                return "🕵️ Clue #1: The secret number is " + (secret % 2 == 0 ? "EVEN." : "ODD.");
             case 2:
-                if (secret % 10 == 0) return "🕵️ Clue #2: The secret number is a multiple of 10.";
-                if (secret % 5 == 0) return "🕵️ Clue #2: The secret number is divisible by 5.";
-                if (secret % 3 == 0) return "🕵️ Clue #2: The secret number is divisible by 3.";
-                if (secret % 7 == 0) return "🕵️ Clue #2: The secret number is divisible by 7.";
-                if (isPrime(secret)) return "🕵️ Clue #2: The secret number is a PRIME number!";
-                return "🕵️ Clue #2: The secret number is NOT divisible by 3 or 5.";
+                return "🧩 Intel #1: The secret number is " + (secret % 2 == 0 ? "EVEN (divisible by 2)." : "ODD.");
             case 3:
-                long sum = 0, temp = secret;
-                while (temp > 0) {
-                    sum += temp % 10;
-                    temp /= 10;
-                }
-                return "🕵️ Clue #3: The sum of digits of the secret number is " + sum + ".";
             case 4:
-                return "🕵️ Clue #4: The secret number ends with the digit " + (secret % 10) + ".";
+                if (secret % 10 == 0) return "🔢 Intel #2: The secret number is a multiple of 10 (ends in 0).";
+                if (secret % 5 == 0) return "🔢 Intel #2: The secret number is divisible by 5 (ends in 5).";
+                if (secret % 3 == 0) return "🔢 Intel #2: The secret number is divisible by 3.";
+                if (secret % 4 == 0) return "🔢 Intel #2: The secret number is a multiple of 4.";
+                if (secret % 7 == 0) return "🔢 Intel #2: The secret number is divisible by 7.";
+                if (isPrime(secret)) return "🔢 Intel #2: The secret number is a PRIME number (only divisible by 1 and itself)!";
+                return "🔢 Intel #2: The secret number is COMPOSITE and not divisible by 2, 3, or 5.";
+            case 5:
+            case 6:
+                long sum = sumOfDigits(secret);
+                return "🧮 Intel #3: The sum of digits of the secret number is " + sum + ".";
             default:
-                long lowerTens = (secret / 10) * 10;
-                long upperTens = lowerTens + 9;
-                return "🕵️ Clue #" + attempt + ": The secret number lies between " + Math.max(min, lowerTens) + " and " + Math.min(max, upperTens) + ".";
+                if (max - min > 10) {
+                    return "🎯 Intel #" + attempt + ": The secret number ends with the digit " + (secret % 10) + ".";
+                } else {
+                    long lowerTens = (secret / 10) * 10;
+                    long upperTens = lowerTens + 9;
+                    return "🎯 Intel #" + attempt + ": The secret number lies between " + Math.max(min, lowerTens) + " and " + Math.min(max, upperTens) + ".";
+                }
         }
+    }
+
+    public long sumOfDigits(long number) {
+        long sum = 0;
+        long temp = Math.abs(number);
+        while (temp > 0) {
+            sum += temp % 10;
+            temp /= 10;
+        }
+        return sum;
+    }
+
+    private String generateDetectiveClue(long secret, int attempt, long min, long max) {
+        return generateProgressiveClue(secret, attempt, min, max, 7);
     }
 
     private boolean isPrime(long n) {
@@ -609,6 +631,69 @@ public class GameService {
                 result.put("message", "Second Chance Shield granted +1 bonus attempt!");
                 break;
 
+            case "parity":
+                String parityText = (secret % 2 == 0) ? "The secret number is EVEN (divisible by 2)." : "The secret number is ODD.";
+                result.put("clueType", "PARITY");
+                result.put("clue", parityText);
+                result.put("message", "Parity Intel: " + parityText);
+                break;
+
+            case "divisibility":
+                String divText;
+                if (secret % 10 == 0) {
+                    divText = "The secret number is a multiple of 10 (ends with 0).";
+                } else if (secret % 5 == 0) {
+                    divText = "The secret number is divisible by 5 (ends with 5).";
+                } else if (secret % 3 == 0) {
+                    divText = "The secret number is divisible by 3.";
+                } else if (secret % 4 == 0) {
+                    divText = "The secret number is a multiple of 4.";
+                } else if (secret % 7 == 0) {
+                    divText = "The secret number is divisible by 7.";
+                } else if (isPrime(secret)) {
+                    divText = "The secret number is a PRIME number (only divisible by 1 and itself)!";
+                } else {
+                    divText = "The secret number is NOT divisible by 2, 3, 5, or 10.";
+                }
+                result.put("clueType", "DIVISIBILITY");
+                result.put("clue", divText);
+                result.put("message", "Divisibility Intel: " + divText);
+                break;
+
+            case "digitsum":
+                long digitSumVal = sumOfDigits(secret);
+                String digitSumText = "The sum of all digits of the secret number is " + digitSumVal + ".";
+                result.put("clueType", "DIGIT_SUM");
+                result.put("clue", digitSumText);
+                result.put("digitSum", digitSumVal);
+                result.put("message", "Digit Analysis Intel: " + digitSumText);
+                break;
+
+            case "lastdigit":
+                long lastDigitVal = Math.abs(secret % 10);
+                String lastDigitText = "The secret number ends with the digit " + lastDigitVal + ".";
+                result.put("clueType", "LAST_DIGIT");
+                result.put("clue", lastDigitText);
+                result.put("lastDigit", lastDigitVal);
+                result.put("message", "Unit Digit Intel: " + lastDigitText);
+                break;
+
+            case "rangebracket":
+                long curMin = Math.max(game.getMinNumber(), currentMin);
+                long curMax = Math.min(game.getMaxNumber(), currentMax);
+                long midPoint = curMin + ((curMax - curMin) / 2);
+                String bracketText;
+                if (secret <= midPoint) {
+                    bracketText = "Target is located in the LOWER half: [" + curMin + " to " + midPoint + "].";
+                } else {
+                    bracketText = "Target is located in the UPPER half: [" + (midPoint + 1) + " to " + curMax + "].";
+                }
+                result.put("clueType", "RANGE_BRACKET");
+                result.put("clue", bracketText);
+                result.put("midPoint", midPoint);
+                result.put("message", "Range Bracket Intel: " + bracketText);
+                break;
+
             case "empfreeze":
                 if (game.isEmpFreezeUsed()) {
                     throw new BadRequestException("Turn Freeze power-up has already been used in this game.");
@@ -623,6 +708,40 @@ public class GameService {
         }
 
         return result;
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getGameClues(Long gameId, long currentMin, long currentMax) {
+        Game game = gameRepository.findById(gameId)
+                .orElseThrow(() -> new ResourceNotFoundException("Game not found with ID: " + gameId));
+
+        long secret = game.getSecretNumber();
+        long min = Math.max(game.getMinNumber(), currentMin);
+        long max = Math.min(game.getMaxNumber(), currentMax);
+
+        Map<String, Object> clues = new HashMap<>();
+        clues.put("gameId", gameId);
+        clues.put("parity", secret % 2 == 0 ? "EVEN" : "ODD");
+        clues.put("digitSum", sumOfDigits(secret));
+        clues.put("lastDigit", Math.abs(secret % 10));
+        clues.put("isPrime", isPrime(secret));
+
+        List<String> activeClues = new ArrayList<>();
+        activeClues.add("Parity: " + (secret % 2 == 0 ? "EVEN" : "ODD"));
+        if (secret % 10 == 0) activeClues.add("Divisible by 10");
+        else if (secret % 5 == 0) activeClues.add("Divisible by 5");
+        else if (secret % 3 == 0) activeClues.add("Divisible by 3");
+        else if (isPrime(secret)) activeClues.add("Prime Number");
+        activeClues.add("Sum of Digits: " + sumOfDigits(secret));
+        activeClues.add("Ends in: " + Math.abs(secret % 10));
+
+        clues.put("clueList", activeClues);
+        return clues;
+    }
+
+    @Transactional
+    public Map<String, Object> unlockClue(Long gameId, String clueType, long currentMin, long currentMax) {
+        return usePowerUp(gameId, clueType.toLowerCase().trim(), currentMin, currentMax);
     }
 
     public GameResponse mapToGameResponse(Game game) {

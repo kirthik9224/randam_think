@@ -67,6 +67,23 @@ public class GameController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/{gameId}/clues")
+    public ResponseEntity<Map<String, Object>> getGameClues(
+            @PathVariable Long gameId,
+            @RequestParam(defaultValue = "1") long currentMin,
+            @RequestParam(defaultValue = "1000") long currentMax) {
+        return ResponseEntity.ok(gameService.getGameClues(gameId, currentMin, currentMax));
+    }
+
+    @PostMapping("/{gameId}/clue/{clueType}")
+    public ResponseEntity<Map<String, Object>> unlockClue(
+            @PathVariable Long gameId,
+            @PathVariable String clueType,
+            @RequestParam(defaultValue = "1") long currentMin,
+            @RequestParam(defaultValue = "1000") long currentMax) {
+        return ResponseEntity.ok(gameService.unlockClue(gameId, clueType, currentMin, currentMax));
+    }
+
     @GetMapping("/levels/{levelNumber}")
     public ResponseEntity<com.randomthinkinggame.config.SoloLevelConfig> getLevelConfig(@PathVariable int levelNumber) {
         return ResponseEntity.ok(gameService.getLevelConfig(levelNumber));

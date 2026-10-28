@@ -127,6 +127,32 @@ export const gameService = {
     }
   },
 
+  async getGameClues(gameId, currentMin = 1, currentMax = 1000) {
+    if (!isOnline() || (gameId && String(gameId).startsWith('off_'))) {
+      return offlineGameEngine.getOfflineClues(gameId, currentMin, currentMax);
+    }
+    try {
+      const response = await api.get(`/games/${gameId}/clues?currentMin=${currentMin}&currentMax=${currentMax}`);
+      return response.data;
+    } catch (err) {
+      console.warn('Backend clues fallback:', err);
+      return offlineGameEngine.getOfflineClues(gameId, currentMin, currentMax);
+    }
+  },
+
+  async unlockClue(gameId, clueType, currentMin = 1, currentMax = 1000) {
+    if (!isOnline() || (gameId && String(gameId).startsWith('off_'))) {
+      return offlineGameEngine.useOfflinePowerUp(gameId, clueType, currentMin, currentMax);
+    }
+    try {
+      const response = await api.post(`/games/${gameId}/clue/${clueType}?currentMin=${currentMin}&currentMax=${currentMax}`);
+      return response.data;
+    } catch (err) {
+      console.warn('Backend unlockClue fallback:', err);
+      return offlineGameEngine.useOfflinePowerUp(gameId, clueType, currentMin, currentMax);
+    }
+  },
+
   async getLevelConfig(levelNumber) {
     try {
       const response = await api.get(`/games/levels/${levelNumber}`);

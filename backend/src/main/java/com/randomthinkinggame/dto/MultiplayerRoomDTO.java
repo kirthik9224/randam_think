@@ -30,6 +30,7 @@ public class MultiplayerRoomDTO {
     private LocalDateTime turnDeadline;
     private String difficultyLabel;
     private double rewardMultiplier;
+    private String currentRoundClue;
     private Long secondsRemaining;
     private String roundStatus;
     private Long roundWinnerId;
@@ -72,6 +73,7 @@ public class MultiplayerRoomDTO {
         this.turnDeadline = room.getTurnDeadline();
         this.difficultyLabel = room.getDifficultyLabel();
         this.rewardMultiplier = room.getRewardMultiplier();
+        this.currentRoundClue = room.getCurrentRoundClue();
 
         if (room.getTurnDeadline() != null) {
             long secs = java.time.Duration.between(LocalDateTime.now(), room.getTurnDeadline()).getSeconds();
@@ -415,6 +417,14 @@ public class MultiplayerRoomDTO {
 
     public void setPlayers(List<RoomPlayerDTO> players) {
         this.players = players;
+    }
+
+    public String getCurrentRoundClue() {
+        return currentRoundClue;
+    }
+
+    public void setCurrentRoundClue(String currentRoundClue) {
+        this.currentRoundClue = currentRoundClue;
     }
 
     public List<MultiplayerGuess> getRecentGuesses() {

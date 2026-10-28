@@ -13,6 +13,7 @@ import { getDefaultRoster, getPlayerModeTitle, calculateAiGuess } from '../utils
 import RosterCustomizer from '../components/RosterCustomizer';
 import InteractiveRangeRuler from '../components/InteractiveRangeRuler';
 import PowerUpsBar from '../components/PowerUpsBar';
+import CluesPanel from '../components/CluesPanel';
 import GameJuiceEffects from '../components/GameJuiceEffects';
 import InteractiveNumpad from '../components/InteractiveNumpad';
 import DeductionAnalyticsBar from '../components/DeductionAnalyticsBar';
@@ -59,6 +60,8 @@ const Game = () => {
   const [currentHint, setCurrentHint] = useState(null);
   const [proximity, setProximity] = useState(null);
   const [detectiveClues, setDetectiveClues] = useState([]);
+  const [discoveredClues, setDiscoveredClues] = useState([]);
+  const [usedClueTypes, setUsedClueTypes] = useState({});
   const [guesses, setGuesses] = useState([]);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -211,6 +214,8 @@ const Game = () => {
       setCurrentHint(null);
       setProximity(null);
       setDetectiveClues([]);
+      setDiscoveredClues([]);
+      setUsedClueTypes({});
       setGuesses([]);
       setGuessInput('');
       setElapsedSeconds(0);
@@ -281,10 +286,46 @@ const Game = () => {
       const res = await gameService.usePowerUp(game.gameId, 'slice50', currentMin, currentMax);
       if (res.newMin && res.newMin > currentMin) setCurrentMin(res.newMin);
       if (res.newMax && res.newMax < currentMax) setCurrentMax(res.newMax);
-      setHintClue(`Helpful Clue: The secret number is between ${res.newMin || currentMin} and ${res.newMax || currentMax}!`);
+      const text = `Helpful Clue: The secret number is between ${res.newMin || currentMin} and ${res.newMax || currentMax}!`;
+      setHintClue(text);
+      setDiscoveredClues((prev) => [...prev, { text, type: 'range', icon: '⚡' }]);
     } catch {
       const mid = Math.floor((currentMin + currentMax) / 2);
-      setHintClue(`Helpful Clue: Try guessing ${mid} (the midpoint) to cut the remaining numbers in half!`);
+      const text = `Helpful Clue: Try guessing ${mid} (the midpoint) to cut the remaining numbers in half!`;
+      setHintClue(text);
+      setDiscoveredClues((prev) => [...prev, { text, type: 'range', icon: '⚡' }]);
+    }
+  };
+
+  const handleUnlockClue = async (type) => {
+    if (!game || finalResult || submitting || usedClueTypes[type]) return;
+    try {
+      setSubmitting(true);
+      const res = await gameService.unlockClue(game.gameId, type, currentMin, currentMax);
+      setUsedClueTypes((prev) => ({ ...prev, [type]: true }));
+      sounds.playHint ? sounds.playHint() : sounds.playPowerUp();
+
+      if (res.newMin && res.newMin > currentMin) setCurrentMin(res.newMin);
+      if (res.newMax && res.newMax < currentMax) setCurrentMax(res.newMax);
+
+      const clueText = res.clue || res.message;
+      if (clueText) {
+        setDiscoveredClues((prev) => {
+          if (prev.some((c) => (typeof c === 'string' ? c : c.text) === clueText)) return prev;
+          const icon = type === 'parity' ? '🧩' : type === 'divisibility' ? '🔢' : type === 'digitsum' ? '🧮' : type === 'lastdigit' ? '🎯' : '📐';
+          return [...prev, { text: clueText, type, icon }];
+        });
+        triggerFloatingText(`💡 INTEL UNLOCKED!`, 'linear-gradient(135deg, #8b5cf6, #6366f1)');
+      }
+    } catch (err) {
+      console.warn('Unlock clue fallback', err);
+      setUsedClueTypes((prev) => ({ ...prev, [type]: true }));
+      sounds.playHint ? sounds.playHint() : sounds.playPowerUp();
+      const mid = Math.floor((currentMin + currentMax) / 2);
+      const fallbackClue = `Target lies around candidate range [${currentMin} - ${currentMax}]`;
+      setDiscoveredClues((prev) => [...prev, { text: fallbackClue, type, icon: '💡' }]);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -450,12 +491,17 @@ const Game = () => {
       }
 
       if (response.extraClue) {
+        setDiscoveredClues((prev) => {
+          if (prev.some((c) => (typeof c === 'string' ? c : c.text) === response.extraClue)) return prev;
+          return [...prev, { text: response.extraClue, type: 'auto', icon: '🕵️' }];
+        });
         setDetectiveClues((prev) => {
           if (!prev.includes(response.extraClue)) {
             return [...prev, response.extraClue];
           }
           return prev;
         });
+        triggerFloatingText('🕵️ NEW INTEL REVEALED!', 'linear-gradient(135deg, #3b82f6, #1d4ed8)');
       }
 
       // Heartbeat tension audio on critical attempts
@@ -961,29 +1007,15 @@ const Game = () => {
               />
             </div>
 
-            {/* Single Friendly Hint Button */}
-            <div className="text-center mb-3">
-              {hintClue ? (
-                <div className="alert alert-info border-info rounded-4 py-2 px-3 small my-1 animate-fade-in d-inline-flex align-items-center gap-2">
-                  <span>💡 {hintClue}</span>
-                  <button
-                    type="button"
-                    className="btn-close btn-close-sm"
-                    onClick={() => setHintClue('')}
-                  ></button>
-                </div>
-              ) : (
-                !hintUsed && (
-                  <button
-                    type="button"
-                    onClick={handleRequestHint}
-                    className="btn btn-outline-info rounded-pill px-4 py-1.5 fw-bold small"
-                    disabled={submitting || Boolean(finalResult)}
-                  >
-                    <i className="bi bi-lightbulb-fill text-warning me-1"></i> Need a Hint?
-                  </button>
-                )
-              )}
+            {/* Tactical Clues & Mission Intel Panel */}
+            <div className="mb-3">
+              <CluesPanel
+                clues={discoveredClues}
+                onUnlockClue={handleUnlockClue}
+                disabled={submitting || isCurrentAi || aiThinking || Boolean(finalResult)}
+                loading={submitting}
+                usedClueTypes={usedClueTypes}
+              />
             </div>
 
             {/* Three Small Information Cards at the Bottom */}

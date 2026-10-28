@@ -271,8 +271,10 @@ export const makeOfflineGuess = (gameId, guessNum) => {
   else proximity = 'FREEZING';
 
   let extraClue = null;
-  if (game.gameMode === 'DETECTIVE' && guess !== secret) {
-    extraClue = generateDetectiveClue(secret, attemptsUsed, game.minNumber, game.maxNumber);
+  if (guess !== secret) {
+    if (game.gameMode === 'DETECTIVE' || attemptsUsed === 2 || attemptsUsed === 4 || attemptsUsed === 6 || (game.attemptsAllowed - attemptsUsed) <= 2) {
+      extraClue = generateDetectiveClue(secret, attemptsUsed, game.minNumber, game.maxNumber);
+    }
   }
 
   let result;
@@ -420,6 +422,68 @@ export const useOfflinePowerUp = (gameId, type, currentMin = 1, currentMax = 100
       };
     }
 
+    case 'parity': {
+      const clue = secret % 2 === 0 ? 'The secret number is EVEN (divisible by 2).' : 'The secret number is ODD.';
+      return {
+        powerUpType: 'parity',
+        clue,
+        message: `Parity Intel: ${clue}`,
+      };
+    }
+
+    case 'divisibility': {
+      let clue;
+      if (secret % 10 === 0) clue = 'The secret number is a multiple of 10.';
+      else if (secret % 5 === 0) clue = 'The secret number is divisible by 5.';
+      else if (secret % 3 === 0) clue = 'The secret number is divisible by 3.';
+      else if (secret % 4 === 0) clue = 'The secret number is a multiple of 4.';
+      else if (isPrime(secret)) clue = 'The secret number is a PRIME number!';
+      else clue = 'The secret number is NOT divisible by 2, 3, or 5.';
+      return {
+        powerUpType: 'divisibility',
+        clue,
+        message: `Divisibility Intel: ${clue}`,
+      };
+    }
+
+    case 'digitsum': {
+      let sum = 0;
+      let temp = Math.abs(secret);
+      while (temp > 0) {
+        sum += temp % 10;
+        temp = Math.floor(temp / 10);
+      }
+      return {
+        powerUpType: 'digitsum',
+        clue: `The sum of digits is ${sum}.`,
+        digitSum: sum,
+        message: `Digit Sum Intel: Sum of digits = ${sum}`,
+      };
+    }
+
+    case 'lastdigit': {
+      const last = Math.abs(secret % 10);
+      return {
+        powerUpType: 'lastdigit',
+        clue: `The secret number ends with digit ${last}.`,
+        lastDigit: last,
+        message: `Unit Digit Intel: Ends with ${last}`,
+      };
+    }
+
+    case 'rangebracket': {
+      const min = Math.max(game ? game.minNumber : 1, currentMin);
+      const max = Math.min(game ? game.maxNumber : 1000, currentMax);
+      const mid = Math.floor((min + max) / 2);
+      const clue = secret <= mid ? `Target lies in lower half [${min} to ${mid}]` : `Target lies in upper half [${mid + 1} to ${max}]`;
+      return {
+        powerUpType: 'rangebracket',
+        clue,
+        midPoint: mid,
+        message: `Range Bracket: ${clue}`,
+      };
+    }
+
     case 'empfreeze':
     default:
       return {
@@ -427,6 +491,33 @@ export const useOfflinePowerUp = (gameId, type, currentMin = 1, currentMax = 100
         message: "Turn Freeze activated! Opponent's turn skipped.",
       };
   }
+};
+
+export const getOfflineClues = (gameId, currentMin = 1, currentMax = 1000) => {
+  const game = loadActiveGame();
+  const secret = game ? game.secretNumber : Math.floor((currentMin + currentMax) / 2);
+  let sum = 0;
+  let temp = Math.abs(secret);
+  while (temp > 0) {
+    sum += temp % 10;
+    temp = Math.floor(temp / 10);
+  }
+
+  const clueList = [
+    `Parity: ${secret % 2 === 0 ? 'EVEN' : 'ODD'}`,
+    secret % 10 === 0 ? 'Divisible by 10' : secret % 5 === 0 ? 'Divisible by 5' : secret % 3 === 0 ? 'Divisible by 3' : isPrime(secret) ? 'Prime Number' : 'Composite',
+    `Sum of Digits: ${sum}`,
+    `Ends in: ${Math.abs(secret % 10)}`,
+  ];
+
+  return {
+    gameId: game ? game.gameId : gameId,
+    parity: secret % 2 === 0 ? 'EVEN' : 'ODD',
+    digitSum: sum,
+    lastDigit: Math.abs(secret % 10),
+    isPrime: isPrime(secret),
+    clueList,
+  };
 };
 
 export const getOfflineProfile = (playerId) => {

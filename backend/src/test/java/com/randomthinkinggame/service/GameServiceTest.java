@@ -173,4 +173,31 @@ public class GameServiceTest {
             gameService.makeGuess(gameResp.getGameId(), new GuessRequest(secret));
         });
     }
+
+    @Test
+    @DisplayName("Progressive clues and game intel are accurately generated")
+    void testProgressiveCluesAndGameIntel() {
+        GameStartRequest startReq = new GameStartRequest(testPlayer.getId(), "MEDIUM", "CLASSIC", "SOLO");
+        GameResponse gameResp = gameService.startGame(startReq);
+
+        Map<String, Object> clues = gameService.getGameClues(gameResp.getGameId(), 1, 100);
+        assertNotNull(clues);
+        assertTrue(clues.containsKey("parity"));
+        assertTrue(clues.containsKey("digitSum"));
+        assertTrue(clues.containsKey("lastDigit"));
+        assertNotNull(clues.get("clueList"));
+
+        // Unlock specific clue types
+        Map<String, Object> parityClue = gameService.unlockClue(gameResp.getGameId(), "parity", 1, 100);
+        assertNotNull(parityClue.get("clue"));
+
+        Map<String, Object> divClue = gameService.unlockClue(gameResp.getGameId(), "divisibility", 1, 100);
+        assertNotNull(divClue.get("clue"));
+
+        Map<String, Object> digitSumClue = gameService.unlockClue(gameResp.getGameId(), "digitsum", 1, 100);
+        assertNotNull(digitSumClue.get("digitSum"));
+
+        Map<String, Object> lastDigitClue = gameService.unlockClue(gameResp.getGameId(), "lastdigit", 1, 100);
+        assertNotNull(lastDigitClue.get("lastDigit"));
+    }
 }

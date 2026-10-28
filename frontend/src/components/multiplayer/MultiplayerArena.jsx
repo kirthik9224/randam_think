@@ -327,6 +327,42 @@ const MultiplayerArena = ({
         )}
       </div>
 
+      {/* Live Round Intel & Mission Clues */}
+      {room.currentRoundClue && (
+        <div
+          className="p-3 mb-4 rounded-4 shadow-sm d-flex align-items-center justify-content-between animate-pop-in"
+          style={{
+            background: 'linear-gradient(135deg, rgba(30, 27, 75, 0.9), rgba(15, 23, 42, 0.95))',
+            border: isFinalBoss
+              ? '2px solid rgba(245, 158, 11, 0.7)'
+              : isNightmare
+              ? '2px solid rgba(239, 68, 68, 0.7)'
+              : '1px solid rgba(139, 92, 246, 0.4)',
+            boxShadow: isFinalBoss ? '0 0 25px rgba(245, 158, 11, 0.25)' : 'none',
+          }}
+        >
+          <div className="d-flex align-items-center gap-3">
+            <span className="fs-3">{isFinalBoss ? '👑' : isNightmare ? '🔥' : '🛰️'}</span>
+            <div>
+              <div className="d-flex align-items-center gap-2 mb-0.5">
+                <span className="badge bg-purple bg-opacity-75 text-light text-uppercase fw-bold" style={{ fontSize: '0.65rem' }}>
+                  {isFinalBoss ? 'Boss Round Intel' : isNightmare ? 'Nightmare Clue' : 'Active Mission Intel'}
+                </span>
+                <span className="text-white-50 small" style={{ fontSize: '0.7rem' }}>
+                  Shared with all players
+                </span>
+              </div>
+              <div className="fw-black text-warning fs-6 font-monospace">
+                {room.currentRoundClue}
+              </div>
+            </div>
+          </div>
+          <span className="badge bg-dark bg-opacity-50 text-white-50 border border-secondary px-2.5 py-1 small d-none d-md-inline-block">
+            Round {room.currentRoundNumber} / {room.totalRounds}
+          </span>
+        </div>
+      )}
+
       <div className="row g-4">
         {/* Left Column: Guess Form + Roster */}
         <div className="col-lg-5">
@@ -485,22 +521,29 @@ const MultiplayerArena = ({
                         border: '1px solid rgba(255, 255, 255, 0.08)',
                       }}
                     >
-                      <div className="d-flex align-items-center gap-2">
-                        <strong className="text-white fs-5">
-                          {Number(g.guessNumber).toLocaleString()}
-                        </strong>
-                        <span className="text-white-50 small">
-                          by <span className="text-white fw-bold">{g.username}</span>
-                          {g.team && g.team !== 'SOLO' && (
-                            <span
-                              className={`ms-1 small ${
-                                g.team === 'TEAM_RED' ? 'text-danger' : 'text-primary'
-                              }`}
-                            >
-                              ({g.team === 'TEAM_RED' ? 'Red' : 'Blue'})
-                            </span>
-                          )}
-                        </span>
+                      <div className="d-flex flex-column align-items-start">
+                        <div className="d-flex align-items-center gap-2">
+                          <strong className="text-white fs-5">
+                            {Number(g.guessNumber).toLocaleString()}
+                          </strong>
+                          <span className="text-white-50 small">
+                            by <span className="text-white fw-bold">{g.username}</span>
+                            {g.team && g.team !== 'SOLO' && (
+                              <span
+                                className={`ms-1 small ${
+                                  g.team === 'TEAM_RED' ? 'text-danger' : 'text-primary'
+                                }`}
+                              >
+                                ({g.team === 'TEAM_RED' ? 'Red' : 'Blue'})
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        {g.extraClue && (
+                          <div className="small text-warning mt-1 font-monospace" style={{ fontSize: '0.74rem' }}>
+                            {g.extraClue}
+                          </div>
+                        )}
                       </div>
 
                       <span className={`badge px-3 py-2 rounded-pill fw-bold ${badgeClass}`}>
